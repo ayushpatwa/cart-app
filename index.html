@@ -90,8 +90,9 @@
 
         <div class="admin-action-btns">
           <button id="btn-admin-add-dish" class="btn-add-item">➕ Add New Dish</button>
-          <button id="btn-admin-cats" class="btn-manage-cats">📁 Edit Categories</button>
-          <button id="btn-admin-reset" class="btn-reset-data">🔄 Reset Menu</button>
+          <button id="btn-admin-bulk" class="btn-manage-cats">📥 Bulk Import/Export</button>
+          <button id="btn-admin-cats" class="btn-manage-cats">📁 Categories</button>
+          <button id="btn-admin-reset" class="btn-reset-data">🔄 Reset</button>
         </div>
       </div>
     </div>
@@ -333,6 +334,39 @@
         <p style="color: var(--accent-gold); font-size: 0.9rem; font-weight: 700; margin-top: 1rem;">
           Street Bytes Cart #04 • Live Online Menu
         </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BULK IMPORT / EXPORT MODAL -->
+  <div id="bulk-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>📥 Bulk Import 80+ Dishes / Backup</h3>
+        <button class="btn-close-drawer btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">
+          Paste CSV rows (e.g. <code>Name, Category, Price, Description, ImageURL</code>) or JSON array below:
+        </p>
+
+        <div class="form-group">
+          <textarea id="bulk-input-data" rows="7" placeholder="Example CSV:&#10;Crispy Tacos, tacos, 8.99, Delicious crispy beef tacos, https://example.com/taco.jpg&#10;Gourmet Burger, burgers, 11.50, Double patty burger, https://example.com/burger.jpg"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label" style="font-weight: 600;">
+            <input type="checkbox" id="bulk-replace-check"> Replace existing menu completely (Uncheck to append)
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: space-between; align-items: center; margin-top: 1.25rem;">
+          <button id="btn-export-bulk" class="btn-manage-cats">📄 Backup Menu (JSON)</button>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-manage-cats btn-close-modal">Cancel</button>
+            <button id="btn-import-bulk" class="btn-add-item">🚀 Upload Items</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

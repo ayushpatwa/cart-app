@@ -357,6 +357,7 @@ function renderMenuItems() {
         <div class="card-image-wrapper">
           <img src="${item.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'}" 
                alt="${escapeHtml(item.name)}" 
+               loading="lazy"
                onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'" />
           
           <div class="card-tags">
@@ -814,6 +815,9 @@ function setupEventListeners() {
   // Admin Toolbar buttons
   document.getElementById("btn-admin-add-dish").addEventListener("click", () => openEditItemModal(null));
   document.getElementById("btn-admin-cats").addEventListener("click", openCategoryModal);
+  const bulkBtn = document.getElementById("btn-admin-bulk");
+  if (bulkBtn) bulkBtn.addEventListener("click", openBulkModal);
+
   document.getElementById("btn-admin-reset").addEventListener("click", () => {
     if (confirm("Reset menu data to factory defaults? All custom changes will be overwritten.")) {
       resetToDefaultData();
@@ -821,6 +825,12 @@ function setupEventListeners() {
       showToast("Menu reset to defaults!", "admin");
     }
   });
+
+  // Bulk Modal Buttons
+  const importBtn = document.getElementById("btn-import-bulk");
+  if (importBtn) importBtn.addEventListener("click", importBulkItems);
+  const exportBtn = document.getElementById("btn-export-bulk");
+  if (exportBtn) exportBtn.addEventListener("click", exportItems);
 
   // Save Item Modal Button
   document.getElementById("btn-save-item").addEventListener("click", saveItemFromModal);
@@ -1009,4 +1019,82 @@ function escapeHtml(str) {
       "'": '&#039;'
     }[m];
   });
+}
+
+/* Bulk Import / Export Functions for 80+ Items */
+function openBulkModal() {
+  const modal = document.getElementById("bulk-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function importBulkItems() {
+  const input = document.getElementById("bulk-input-data").value.trim();
+  if (!input) {
+    showToast("Please paste CSV or JSON data to import", "error");
+    return;
+  }
+
+  let importedItems = [];
+  try {
+    if (input.startsWith("[") || input.startsWith("{")) {
+      // JSON import
+      const parsed = JSON.parse(input);
+      importedItems = Array.isArray(parsed) ? parsed : (parsed.items || []);
+    } else {
+      // CSV import (name, category, price, description, image)
+      const lines = input.split("\n").map(l => l.trim()).filter(Boolean);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (i === 0 && line.toLowerCase().includes("name")) continue; // skip header
+        const parts = line.split(",").map(p => p.trim().replace(/^["']|["']$/g, ''));
+        if (parts.length >= 3) {
+          importedItems.push({
+            id: "item-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+            name: parts[0],
+            category: parts[1] || "burgers",
+            price: parseFloat(parts[2]) || 9.99,
+            description: parts[3] || "",
+            image: parts[4] || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
+            inStock: true,
+            tags: ["Featured"],
+            dietary: []
+          });
+        }
+      }
+    }
+
+    if (importedItems.length === 0) {
+      showToast("No valid items found in import data", "error");
+      return;
+    }
+
+    // Append to existing items or replace based on checkbox
+    const replaceMode = document.getElementById("bulk-replace-check").checked;
+    if (replaceMode) {
+      state.items = importedItems;
+    } else {
+      state.items = [...importedItems, ...state.items];
+    }
+
+    saveState();
+    renderCategoryBar();
+    renderMenuItems();
+    closeModal("bulk-modal");
+    showToast(`Successfully imported ${importedItems.length} dishes to live menu! 🎉`, "admin");
+
+  } catch (err) {
+    showToast("Error parsing import data. Check CSV or JSON format.", "error");
+  }
+}
+
+function exportItems() {
+  const jsonStr = JSON.stringify(state.items, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `food_cart_menu_export_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("Exported menu JSON backup file! 📄", "success");
 }
