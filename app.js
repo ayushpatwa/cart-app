@@ -1,0 +1,853 @@
+/**
+ * Food Cart Menu Application - Interactive Logic & Admin System
+ */
+
+// Global State
+let state = {
+  cartName: "Street Bytes Food Cart",
+  tagline: "Artisanal Street Eats & Gourmet Comfort Food",
+  location: "Downtown Plaza • Cart #04",
+  hours: "Mon-Sat: 11:00 AM - 9:00 PM",
+  adminPin: "1234",
+  categories: [],
+  items: [],
+  
+  // UI State
+  isAdmin: false,
+  activeCategory: "all",
+  searchQuery: "",
+  activeDietaryFilters: new Set(),
+  cart: [], // Array of { itemId, qty }
+  editingItemId: null
+};
+
+// LocalStorage Keys
+const STORAGE_KEY = "FOOD_CART_MENU_DATA_V1";
+const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
+
+// Initialize App on DOM Ready
+document.addEventListener("DOMContentLoaded", () => {
+  initData();
+  setupEventListeners();
+  renderApp();
+});
+
+// Load state from LocalStorage or initialize with defaults
+function initData() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      state.cartName = parsed.cartName || DEFAULT_MENU_DATA.cartName;
+      state.tagline = parsed.tagline || DEFAULT_MENU_DATA.tagline;
+      state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
+      state.categories = parsed.categories || DEFAULT_MENU_DATA.categories;
+      state.items = parsed.items || DEFAULT_MENU_DATA.items;
+    } catch (e) {
+      console.error("Failed to parse saved data, reverting to defaults", e);
+      resetToDefaultData();
+    }
+  } else {
+    resetToDefaultData();
+  }
+
+  // Load saved cart items
+  const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+  if (savedCart) {
+    try {
+      state.cart = JSON.parse(savedCart);
+    } catch (e) {
+      state.cart = [];
+    }
+  }
+}
+
+function resetToDefaultData() {
+  state.cartName = DEFAULT_MENU_DATA.cartName;
+  state.tagline = DEFAULT_MENU_DATA.tagline;
+  state.adminPin = DEFAULT_MENU_DATA.adminPin;
+  state.categories = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.categories));
+  state.items = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.items));
+  saveState();
+}
+
+function saveState() {
+  const dataToSave = {
+    cartName: state.cartName,
+    tagline: state.tagline,
+    adminPin: state.adminPin,
+    categories: state.categories,
+    items: state.items
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+}
+
+function saveCartState() {
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cart));
+}
+
+/* ==========================================================================
+   DOM Render Functions
+   ========================================================================== */
+
+function renderApp() {
+  renderAdminHeaderState();
+  renderCategoryBar();
+  renderDietaryFilters();
+  renderMenuItems();
+  renderCartDrawer();
+  renderCartBadge();
+}
+
+function renderAdminHeaderState() {
+  const adminBtn = document.getElementById("btn-admin-toggle");
+  const adminToolbar = document.getElementById("admin-toolbar");
+  const adminPill = document.getElementById("admin-mode-pill");
+
+  if (state.isAdmin) {
+    adminBtn.classList.add("active");
+    adminBtn.innerHTML = `⚙️ Admin Mode (Exit)`;
+    if (adminToolbar) adminToolbar.style.display = "flex";
+    if (adminPill) adminPill.style.display = "flex";
+  } else {
+    adminBtn.classList.remove("active");
+    adminBtn.innerHTML = `🔒 Admin Login`;
+    if (adminToolbar) adminToolbar.style.display = "none";
+    if (adminPill) adminPill.style.display = "none";
+  }
+}
+
+function renderCategoryBar() {
+  const container = document.getElementById("category-bar");
+  if (!container) return;
+
+  container.innerHTML = state.categories.map(cat => {
+    const isActive = state.activeCategory === cat.id ? "active" : "";
+    // count items in category
+    const count = cat.id === "all" 
+      ? state.items.length 
+      : state.items.filter(i => i.category === cat.id).length;
+
+    return `
+      <button class="cat-btn ${isActive}" data-cat-id="${cat.id}">
+        <span>${cat.icon || '🍴'}</span>
+        <span>${cat.name}</span>
+        <span style="opacity: 0.7; font-size: 0.75rem;">(${count})</span>
+      </button>
+    `;
+  }).join("");
+
+  // Add click listeners to category buttons
+  container.querySelectorAll(".cat-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.activeCategory = btn.dataset.catId;
+      renderCategoryBar();
+      renderMenuItems();
+    });
+  });
+}
+
+function renderDietaryFilters() {
+  const container = document.getElementById("dietary-filters");
+  if (!container) return;
+
+  const filters = [
+    { id: "vegan", label: "Vegan 🌱" },
+    { id: "vegetarian", label: "Vegetarian 🥦" },
+    { id: "gluten-free", label: "Gluten-Free 🌾" },
+    { id: "spicy", label: "Spicy 🌶️" }
+  ];
+
+  container.innerHTML = filters.map(f => {
+    const isActive = state.activeDietaryFilters.has(f.id) ? "active" : "";
+    return `
+      <button class="filter-chip ${isActive}" data-dietary="${f.id}">
+        ${f.label}
+      </button>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".filter-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const diet = chip.dataset.dietary;
+      if (state.activeDietaryFilters.has(diet)) {
+        state.activeDietaryFilters.delete(diet);
+      } else {
+        state.activeDietaryFilters.add(diet);
+      }
+      renderDietaryFilters();
+      renderMenuItems();
+    });
+  });
+}
+
+function renderMenuItems() {
+  const container = document.getElementById("menu-grid");
+  const countLabel = document.getElementById("menu-item-count");
+  if (!container) return;
+
+  // Filter items based on active category, search query, dietary
+  let filtered = state.items.filter(item => {
+    // Category check
+    if (state.activeCategory !== "all" && item.category !== state.activeCategory) {
+      return false;
+    }
+    // Search query check
+    if (state.searchQuery) {
+      const q = state.searchQuery.toLowerCase();
+      const matchName = item.name.toLowerCase().includes(q);
+      const matchDesc = item.description.toLowerCase().includes(q);
+      const matchTags = item.tags && item.tags.some(t => t.toLowerCase().includes(q));
+      if (!matchName && !matchDesc && !matchTags) return false;
+    }
+    // Dietary check
+    if (state.activeDietaryFilters.size > 0) {
+      const itemDietary = item.dietary || [];
+      for (let diet of state.activeDietaryFilters) {
+        if (!itemDietary.includes(diet)) return false;
+      }
+    }
+    return true;
+  });
+
+  if (countLabel) {
+    countLabel.textContent = `${filtered.length} dish${filtered.length === 1 ? '' : 'es'} available`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+        <p style="font-size: 3rem; margin-bottom: 1rem;">🌮</p>
+        <h4 style="color: white; font-size: 1.2rem; margin-bottom: 0.5rem;">No dishes found</h4>
+        <p style="font-size: 0.9rem;">Try adjusting your search or category filter.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const isSoldOut = !item.inStock;
+    const soldOutClass = isSoldOut ? "sold-out" : "";
+    const adminCardClass = state.isAdmin ? "admin-card-edit" : "";
+
+    // Cart item quantity
+    const cartEntry = state.cart.find(c => c.itemId === item.id);
+    const cartQty = cartEntry ? cartEntry.qty : 0;
+
+    return `
+      <div class="food-card ${soldOutClass} ${adminCardClass}" data-item-id="${item.id}">
+        <div class="card-image-wrapper">
+          <img src="${item.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'}" 
+               alt="${escapeHtml(item.name)}" 
+               onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'" />
+          
+          <div class="card-tags">
+            ${(item.tags || []).map(tag => `<span class="food-badge ${tag.includes('Popular') || tag.includes('Bestseller') ? 'popular' : ''}">${escapeHtml(tag)}</span>`).join('')}
+          </div>
+
+          ${isSoldOut ? `
+            <div class="sold-out-overlay">
+              <div class="sold-out-banner">Sold Out</div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="card-body">
+          <div class="card-header-line">
+            <h4 class="food-title">${escapeHtml(item.name)}</h4>
+            <span class="food-price">$${parseFloat(item.price).toFixed(2)}</span>
+          </div>
+
+          <p class="food-desc">${escapeHtml(item.description)}</p>
+
+          <div class="card-footer">
+            <span class="calories-label">${item.calories ? `🔥 ${item.calories}` : ''}</span>
+
+            <button class="btn-add-cart" 
+                    data-item-id="${item.id}" 
+                    ${isSoldOut ? 'disabled' : ''}>
+              ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add $${parseFloat(item.price).toFixed(2)}`}
+            </button>
+          </div>
+        </div>
+
+        ${state.isAdmin ? `
+          <!-- ADMIN CONTROL BAR -->
+          <div class="admin-card-controls">
+            <div class="admin-control-row">
+              <button class="stock-toggle-btn ${item.inStock ? 'in-stock' : 'sold-out'}" data-item-id="${item.id}">
+                ${item.inStock ? '✅ In Stock' : '🚫 Mark Available'}
+              </button>
+
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn-edit-dish" data-item-id="${item.id}">✏️ Edit</button>
+                <button class="btn-delete-dish" data-item-id="${item.id}">🗑️</button>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+
+  // Attach event handlers to card elements
+  container.querySelectorAll(".btn-add-cart").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      addToCart(btn.dataset.itemId);
+    });
+  });
+
+  if (state.isAdmin) {
+    // Stock toggle buttons
+    container.querySelectorAll(".stock-toggle-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStockStatus(btn.dataset.itemId);
+      });
+    });
+
+    // Edit dish buttons
+    container.querySelectorAll(".btn-edit-dish").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openEditItemModal(btn.dataset.itemId);
+      });
+    });
+
+    // Delete dish buttons
+    container.querySelectorAll(".btn-delete-dish").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteItem(btn.dataset.itemId);
+      });
+    });
+  }
+}
+
+/* ==========================================================================
+   Cart System Logic
+   ========================================================================== */
+
+function addToCart(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item || !item.inStock) {
+    showToast("Sorry, this item is sold out!", "error");
+    return;
+  }
+
+  const existing = state.cart.find(c => c.itemId === itemId);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    state.cart.push({ itemId, qty: 1 });
+  }
+
+  saveCartState();
+  renderMenuItems();
+  renderCartDrawer();
+  renderCartBadge();
+  showToast(`Added "${item.name}" to your cart!`, "success");
+}
+
+function updateCartQty(itemId, delta) {
+  const index = state.cart.findIndex(c => c.itemId === itemId);
+  if (index === -1) return;
+
+  state.cart[index].qty += delta;
+  if (state.cart[index].qty <= 0) {
+    state.cart.splice(index, 1);
+  }
+
+  saveCartState();
+  renderMenuItems();
+  renderCartDrawer();
+  renderCartBadge();
+}
+
+function renderCartBadge() {
+  const badge = document.getElementById("cart-count-badge");
+  const floatBtn = document.getElementById("floating-cart-btn");
+  const totalItems = state.cart.reduce((sum, i) => sum + i.qty, 0);
+
+  if (badge) badge.textContent = totalItems;
+  if (floatBtn) {
+    floatBtn.style.display = totalItems > 0 ? "flex" : "flex";
+  }
+}
+
+function renderCartDrawer() {
+  const bodyContainer = document.getElementById("cart-body");
+  const subtotalElem = document.getElementById("cart-subtotal");
+  const taxElem = document.getElementById("cart-tax");
+  const totalElem = document.getElementById("cart-total");
+  const checkoutBtn = document.getElementById("btn-checkout");
+
+  if (!bodyContainer) return;
+
+  if (state.cart.length === 0) {
+    bodyContainer.innerHTML = `
+      <div class="cart-empty-state">
+        <span style="font-size: 3.5rem; display: block; margin-bottom: 0.5rem;">🛍️</span>
+        <h4 style="color: white; font-size: 1.1rem;">Your bag is empty</h4>
+        <p style="font-size: 0.85rem; margin-top: 0.3rem;">Select delicious items from the food cart menu to get started!</p>
+      </div>
+    `;
+    if (subtotalElem) subtotalElem.textContent = "$0.00";
+    if (taxElem) taxElem.textContent = "$0.00";
+    if (totalElem) totalElem.textContent = "$0.00";
+    if (checkoutBtn) checkoutBtn.disabled = true;
+    return;
+  }
+
+  let subtotal = 0;
+
+  bodyContainer.innerHTML = state.cart.map(c => {
+    const item = state.items.find(i => i.id === c.itemId);
+    if (!item) return "";
+
+    const linePrice = item.price * c.qty;
+    subtotal += linePrice;
+
+    return `
+      <div class="cart-item-card">
+        <img class="cart-item-img" src="${item.image}" alt="${escapeHtml(item.name)}" 
+             onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'" />
+        
+        <div class="cart-item-details">
+          <div class="cart-item-title">${escapeHtml(item.name)}</div>
+          <div class="cart-item-price">$${parseFloat(item.price).toFixed(2)} each</div>
+        </div>
+
+        <div class="qty-controls">
+          <button class="qty-btn btn-minus" data-item-id="${item.id}">-</button>
+          <span class="qty-val">${c.qty}</span>
+          <button class="qty-btn btn-plus" data-item-id="${item.id}">+</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const tax = subtotal * 0.08; // 8% sales tax
+  const total = subtotal + tax;
+
+  if (subtotalElem) subtotalElem.textContent = `$${subtotal.toFixed(2)}`;
+  if (taxElem) taxElem.textContent = `$${tax.toFixed(2)}`;
+  if (totalElem) totalElem.textContent = `$${total.toFixed(2)}`;
+  if (checkoutBtn) checkoutBtn.disabled = false;
+
+  // Attach quantity event listeners
+  bodyContainer.querySelectorAll(".btn-minus").forEach(btn => {
+    btn.addEventListener("click", () => updateCartQty(btn.dataset.itemId, -1));
+  });
+  bodyContainer.querySelectorAll(".btn-plus").forEach(btn => {
+    btn.addEventListener("click", () => updateCartQty(btn.dataset.itemId, 1));
+  });
+}
+
+/* ==========================================================================
+   Admin Operations (CRUD, Auth, PIN)
+   ========================================================================== */
+
+function toggleStockStatus(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  item.inStock = !item.inStock;
+  saveState();
+  renderMenuItems();
+  showToast(`"${item.name}" marked as ${item.inStock ? 'IN STOCK ✅' : 'SOLD OUT 🚫'}`, "admin");
+}
+
+function openEditItemModal(itemId = null) {
+  state.editingItemId = itemId;
+  const modal = document.getElementById("item-modal");
+  const title = document.getElementById("item-modal-title");
+  
+  // Fill category options
+  const catSelect = document.getElementById("modal-item-category");
+  catSelect.innerHTML = state.categories
+    .filter(c => c.id !== "all")
+    .map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+
+  if (itemId) {
+    const item = state.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (title) title.textContent = "✏️ Edit Food Cart Item";
+    document.getElementById("modal-item-name").value = item.name;
+    catSelect.value = item.category;
+    document.getElementById("modal-item-price").value = item.price;
+    document.getElementById("modal-item-image").value = item.image || "";
+    document.getElementById("modal-item-calories").value = item.calories || "";
+    document.getElementById("modal-item-tags").value = (item.tags || []).join(", ");
+    document.getElementById("modal-item-desc").value = item.description || "";
+    document.getElementById("modal-item-instock").checked = item.inStock;
+
+    // Set dietary checkboxes
+    const dietary = item.dietary || [];
+    document.getElementById("diet-vegan").checked = dietary.includes("vegan");
+    document.getElementById("diet-vegetarian").checked = dietary.includes("vegetarian");
+    document.getElementById("diet-gluten-free").checked = dietary.includes("gluten-free");
+    document.getElementById("diet-spicy").checked = dietary.includes("spicy");
+
+  } else {
+    if (title) title.textContent = "➕ Add New Food Cart Dish";
+    document.getElementById("modal-item-name").value = "";
+    document.getElementById("modal-item-price").value = "";
+    document.getElementById("modal-item-image").value = "";
+    document.getElementById("modal-item-calories").value = "";
+    document.getElementById("modal-item-tags").value = "";
+    document.getElementById("modal-item-desc").value = "";
+    document.getElementById("modal-item-instock").checked = true;
+
+    document.getElementById("diet-vegan").checked = false;
+    document.getElementById("diet-vegetarian").checked = false;
+    document.getElementById("diet-gluten-free").checked = false;
+    document.getElementById("diet-spicy").checked = false;
+  }
+
+  modal.classList.add("open");
+}
+
+function saveItemFromModal() {
+  const name = document.getElementById("modal-item-name").value.trim();
+  const category = document.getElementById("modal-item-category").value;
+  const price = parseFloat(document.getElementById("modal-item-price").value);
+  const image = document.getElementById("modal-item-image").value.trim();
+  const calories = document.getElementById("modal-item-calories").value.trim();
+  const tagsRaw = document.getElementById("modal-item-tags").value.trim();
+  const description = document.getElementById("modal-item-desc").value.trim();
+  const inStock = document.getElementById("modal-item-instock").checked;
+
+  if (!name || isNaN(price) || price < 0) {
+    showToast("Please provide a valid dish name and price!", "error");
+    return;
+  }
+
+  const tags = tagsRaw ? tagsRaw.split(",").map(t => t.trim()).filter(Boolean) : [];
+  
+  const dietary = [];
+  if (document.getElementById("diet-vegan").checked) dietary.push("vegan");
+  if (document.getElementById("diet-vegetarian").checked) dietary.push("vegetarian");
+  if (document.getElementById("diet-gluten-free").checked) dietary.push("gluten-free");
+  if (document.getElementById("diet-spicy").checked) dietary.push("spicy");
+
+  if (state.editingItemId) {
+    // Update existing
+    const item = state.items.find(i => i.id === state.editingItemId);
+    if (item) {
+      item.name = name;
+      item.category = category;
+      item.price = price;
+      item.image = image || item.image;
+      item.calories = calories;
+      item.tags = tags;
+      item.description = description;
+      item.inStock = inStock;
+      item.dietary = dietary;
+      showToast(`Updated "${name}" successfully!`, "admin");
+    }
+  } else {
+    // Create new
+    const newItem = {
+      id: "item-" + Date.now(),
+      name,
+      category,
+      price,
+      image: image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
+      description,
+      inStock,
+      tags,
+      dietary,
+      calories
+    };
+    state.items.unshift(newItem);
+    showToast(`Added new dish "${name}" to menu!`, "admin");
+  }
+
+  saveState();
+  renderCategoryBar();
+  renderMenuItems();
+  closeModal("item-modal");
+}
+
+function deleteItem(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (confirm(`Are you sure you want to delete "${item.name}" from the menu?`)) {
+    state.items = state.items.filter(i => i.id !== itemId);
+    saveState();
+    renderCategoryBar();
+    renderMenuItems();
+    showToast(`Deleted "${item.name}"`, "admin");
+  }
+}
+
+/* ==========================================================================
+   Category Management
+   ========================================================================== */
+
+function openCategoryModal() {
+  const modal = document.getElementById("cat-modal");
+  renderCategoryListInModal();
+  modal.classList.add("open");
+}
+
+function renderCategoryListInModal() {
+  const container = document.getElementById("cat-list-container");
+  if (!container) return;
+
+  container.innerHTML = state.categories
+    .filter(c => c.id !== "all")
+    .map(c => `
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; background: var(--bg-surface); padding: 0.5rem; border-radius: var(--radius-sm);">
+        <span style="font-size: 1.2rem;">${c.icon || '🍴'}</span>
+        <span style="font-weight: 600; flex: 1; color: white;">${escapeHtml(c.name)}</span>
+        <button class="btn-delete-cat" data-cat-id="${c.id}" style="background: rgba(239,68,68,0.2); color: #f87171; padding: 0.25rem 0.5rem; border-radius: 4px;">Delete</button>
+      </div>
+    `).join("");
+
+  container.querySelectorAll(".btn-delete-cat").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const catId = btn.dataset.catId;
+      const count = state.items.filter(i => i.category === catId).length;
+      if (count > 0) {
+        alert(`Cannot delete category! There are ${count} item(s) inside it. Move or delete the items first.`);
+        return;
+      }
+      state.categories = state.categories.filter(c => c.id !== catId);
+      saveState();
+      renderCategoryListInModal();
+      renderCategoryBar();
+    });
+  });
+}
+
+function addCategoryFromModal() {
+  const nameInput = document.getElementById("new-cat-name");
+  const iconInput = document.getElementById("new-cat-icon");
+  const name = nameInput.value.trim();
+  const icon = iconInput.value.trim() || "🍴";
+
+  if (!name) {
+    showToast("Please enter a category name", "error");
+    return;
+  }
+
+  const id = "cat-" + Date.now();
+  state.categories.push({ id, name, icon });
+  saveState();
+
+  nameInput.value = "";
+  iconInput.value = "";
+  renderCategoryListInModal();
+  renderCategoryBar();
+  showToast(`Added category "${name}"`, "admin");
+}
+
+/* ==========================================================================
+   Event Listeners & Modal Controls
+   ========================================================================== */
+
+function setupEventListeners() {
+  // Admin Mode Toggle Button
+  document.getElementById("btn-admin-toggle").addEventListener("click", () => {
+    if (state.isAdmin) {
+      state.isAdmin = false;
+      renderApp();
+      showToast("Logged out of Admin Mode", "admin");
+    } else {
+      openPinModal();
+    }
+  });
+
+  // Search Input
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      state.searchQuery = e.target.value;
+      renderMenuItems();
+    });
+  }
+
+  // Cart Drawer open/close
+  document.getElementById("floating-cart-btn").addEventListener("click", () => {
+    document.getElementById("cart-drawer-backdrop").classList.add("open");
+  });
+
+  document.getElementById("btn-close-cart").addEventListener("click", () => {
+    document.getElementById("cart-drawer-backdrop").classList.remove("open");
+  });
+
+  document.getElementById("cart-drawer-backdrop").addEventListener("click", (e) => {
+    if (e.target.id === "cart-drawer-backdrop") {
+      document.getElementById("cart-drawer-backdrop").classList.remove("open");
+    }
+  });
+
+  // Checkout Button
+  document.getElementById("btn-checkout").addEventListener("click", () => {
+    if (state.cart.length === 0) return;
+    openCheckoutTicketModal();
+  });
+
+  // Admin Toolbar buttons
+  document.getElementById("btn-admin-add-dish").addEventListener("click", () => openEditItemModal(null));
+  document.getElementById("btn-admin-cats").addEventListener("click", openCategoryModal);
+  document.getElementById("btn-admin-reset").addEventListener("click", () => {
+    if (confirm("Reset menu data to factory defaults? All custom changes will be overwritten.")) {
+      resetToDefaultData();
+      renderApp();
+      showToast("Menu reset to defaults!", "admin");
+    }
+  });
+
+  // Save Item Modal Button
+  document.getElementById("btn-save-item").addEventListener("click", saveItemFromModal);
+  document.getElementById("btn-add-cat").addEventListener("click", addCategoryFromModal);
+
+  // Close modals when clicking close buttons or backdrops
+  document.querySelectorAll(".btn-close-modal").forEach(btn => {
+    btn.addEventListener("click", () => {
+      btn.closest(".modal-overlay").classList.remove("open");
+    });
+  });
+
+  document.querySelectorAll(".modal-overlay").forEach(overlay => {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove("open");
+      }
+    });
+  });
+
+  // QR Code Modal Trigger
+  const qrBtn = document.getElementById("btn-qr-view");
+  if (qrBtn) {
+    qrBtn.addEventListener("click", openQrModal);
+  }
+}
+
+/* ==========================================================================
+   PIN Authentication Modal Logic
+   ========================================================================== */
+
+function openPinModal() {
+  const modal = document.getElementById("pin-modal");
+  const inputs = modal.querySelectorAll(".pin-digit");
+  inputs.forEach(input => input.value = "");
+  modal.classList.add("open");
+  inputs[0].focus();
+
+  inputs.forEach((input, idx) => {
+    input.onkeyup = (e) => {
+      if (e.key >= "0" && e.key <= "9") {
+        input.value = e.key;
+        if (idx < inputs.length - 1) inputs[idx + 1].focus();
+        checkPinEntry();
+      } else if (e.key === "Backspace") {
+        input.value = "";
+        if (idx > 0) inputs[idx - 1].focus();
+      }
+    };
+  });
+}
+
+function checkPinEntry() {
+  const inputs = document.querySelectorAll(".pin-digit");
+  const enteredPin = Array.from(inputs).map(i => i.value).join("");
+
+  if (enteredPin.length === 4) {
+    if (enteredPin === state.adminPin) {
+      state.isAdmin = true;
+      closeModal("pin-modal");
+      renderApp();
+      showToast("Admin access granted! 🔓 Edit mode activated.", "admin");
+    } else {
+      showToast("Incorrect PIN! Default PIN is 1234", "error");
+      inputs.forEach(i => i.value = "");
+      inputs[0].focus();
+    }
+  }
+}
+
+/* ==========================================================================
+   Receipt & QR Modal Functions
+   ========================================================================== */
+
+function openCheckoutTicketModal() {
+  closeModal("cart-drawer-backdrop");
+  const modal = document.getElementById("ticket-modal");
+  const ticketBody = document.getElementById("ticket-items-list");
+  const ticketTotal = document.getElementById("ticket-total-val");
+
+  let subtotal = 0;
+  ticketBody.innerHTML = state.cart.map(c => {
+    const item = state.items.find(i => i.id === c.itemId);
+    if (!item) return "";
+    const lineTotal = item.price * c.qty;
+    subtotal += lineTotal;
+
+    return `
+      <div class="ticket-item-row">
+        <span>${c.qty}x ${escapeHtml(item.name)}</span>
+        <span>$${lineTotal.toFixed(2)}</span>
+      </div>
+    `;
+  }).join("");
+
+  const tax = subtotal * 0.08;
+  const grandTotal = subtotal + tax;
+
+  ticketTotal.textContent = `$${grandTotal.toFixed(2)}`;
+  
+  // Clear cart on checkout
+  state.cart = [];
+  saveCartState();
+  renderApp();
+
+  modal.classList.add("open");
+}
+
+function openQrModal() {
+  const modal = document.getElementById("qr-modal");
+  modal.classList.add("open");
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove("open");
+}
+
+/* Helper Utilities */
+function showToast(message, type = "success") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'admin' ? '⚙️' : type === 'error' ? '❌' : '✅'}</span> ${escapeHtml(message)}`;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(-100%)";
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, function(m) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[m];
+  });
+}
