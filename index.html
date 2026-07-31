@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Street Bytes Food Cart | Interactive Menu & Admin Portal</title>
-  <meta name="description" content="Explore delicious artisanal food cart dishes with live ordering, dietary filters, and admin menu editing.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Street Bytes Food Cart | Mobile Menu & Order Portal</title>
+  <meta name="description" content="Mobile food cart menu with live ordering, dietary filters, and mobile admin panel.">
+  <meta name="theme-color" content="#0f1219">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -162,10 +165,10 @@
         </p>
 
         <div class="pin-input-group">
-          <input type="password" maxlength="1" class="pin-digit" autofocus />
-          <input type="password" maxlength="1" class="pin-digit" />
-          <input type="password" maxlength="1" class="pin-digit" />
-          <input type="password" maxlength="1" class="pin-digit" />
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-digit" autofocus />
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-digit" />
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-digit" />
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="pin-digit" />
         </div>
 
         <p class="pin-hint">Default demo PIN is: <strong style="color: var(--accent-gold);">1234</strong></p>
