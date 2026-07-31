@@ -782,6 +782,8 @@ function openCheckoutTicketModal() {
   const modal = document.getElementById("ticket-modal");
   const ticketBody = document.getElementById("ticket-items-list");
   const ticketTotal = document.getElementById("ticket-total-val");
+  const ticketQrImg = document.getElementById("ticket-qr-img");
+  const orderNumElem = document.getElementById("ticket-order-id");
 
   let subtotal = 0;
   ticketBody.innerHTML = state.cart.map(c => {
@@ -803,6 +805,16 @@ function openCheckoutTicketModal() {
 
   ticketTotal.textContent = `$${grandTotal.toFixed(2)}`;
   
+  const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
+  const currentUrl = window.location.origin + window.location.pathname;
+  
+  if (ticketQrImg) {
+    ticketQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl + '?order=' + orderId)}`;
+  }
+  if (orderNumElem) {
+    orderNumElem.textContent = `Order #${orderId} • Pick Up Counter`;
+  }
+
   // Clear cart on checkout
   state.cart = [];
   saveCartState();
@@ -813,6 +825,35 @@ function openCheckoutTicketModal() {
 
 function openQrModal() {
   const modal = document.getElementById("qr-modal");
+  const qrImage = document.getElementById("qr-code-image");
+  const qrUrlDisplay = document.getElementById("qr-url-display");
+
+  // Get current live Vercel URL automatically
+  const currentUrl = window.location.origin + window.location.pathname;
+  
+  if (qrImage) {
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(currentUrl)}`;
+  }
+
+  if (qrUrlDisplay) {
+    qrUrlDisplay.innerHTML = `
+      <div style="background: var(--bg-surface); padding: 0.55rem 0.85rem; border-radius: var(--radius-md); font-size: 0.8rem; color: var(--accent-gold); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.75rem; border: 1px solid var(--border-color);">
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentUrl)}</span>
+        <button id="btn-copy-live-url" style="background: var(--primary); color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">📋 Copy Link</button>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const copyBtn = document.getElementById("btn-copy-live-url");
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(currentUrl);
+          showToast("Live Vercel URL copied to clipboard! 📋", "success");
+        };
+      }
+    }, 10);
+  }
+
   modal.classList.add("open");
 }
 

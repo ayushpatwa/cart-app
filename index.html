@@ -287,7 +287,7 @@
         <div class="ticket-card">
           <div class="ticket-header">
             <h4>STREET BYTES CART</h4>
-            <p style="font-size: 0.8rem; color: #64748b;">Order #SB-8924 • Pick Up Counter</p>
+            <p id="ticket-order-id" style="font-size: 0.8rem; color: #64748b;">Order #SB-8924 • Pick Up Counter</p>
           </div>
 
           <div id="ticket-items-list">
@@ -300,7 +300,7 @@
           </div>
 
           <div class="qr-code-placeholder">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ORDER-SB-8924" alt="Order QR Code" />
+            <img id="ticket-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ORDER-SB-8924" alt="Order QR Code" />
             <p style="font-size: 0.75rem; margin-top: 0.5rem; color: #64748b;">Show QR code to cart chef when called</p>
           </div>
         </div>
@@ -310,20 +310,23 @@
 
   <!-- CART QR MODAL -->
   <div id="qr-modal" class="modal-overlay">
-    <div class="modal-box" style="max-width: 360px; text-align: center;">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
       <div class="modal-header">
-        <h3>📱 Food Cart Menu QR</h3>
+        <h3>📱 Food Cart Live Menu QR</h3>
         <button class="btn-close-drawer btn-close-modal">✕</button>
       </div>
       <div class="modal-body">
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-          Scan with your phone camera to view the live food cart menu anytime!
+          Scan with your phone camera to open this live menu directly!
         </p>
         <div style="background: white; padding: 1rem; border-radius: var(--radius-md); display: inline-block;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://streetbytesfoodcart.demo" alt="Menu QR" style="width: 180px; height: 180px;" />
+          <img id="qr-code-image" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://streetbytesfoodcart.demo" alt="Live Menu QR" style="width: 200px; height: 200px;" />
         </div>
+        
+        <div id="qr-url-display"></div>
+
         <p style="color: var(--accent-gold); font-size: 0.9rem; font-weight: 700; margin-top: 1rem;">
-          Street Bytes Cart #04
+          Street Bytes Cart #04 • Live Online Menu
         </p>
       </div>
     </div>
