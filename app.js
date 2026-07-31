@@ -76,6 +76,11 @@ function loadLocalData() {
       state.cart = [];
     }
   }
+
+  // Restore Admin login session across page refreshes
+  if (localStorage.getItem("ADMIN_LOGGED_IN") === "true") {
+    state.isAdmin = true;
+  }
 }
 
 async function fetchCloudData(silent = false) {
@@ -794,6 +799,7 @@ function setupEventListeners() {
   document.getElementById("btn-admin-toggle").addEventListener("click", () => {
     if (state.isAdmin) {
       state.isAdmin = false;
+      localStorage.removeItem("ADMIN_LOGGED_IN");
       renderApp();
       showToast("Logged out of Admin Mode", "admin");
     } else {
@@ -937,6 +943,7 @@ function checkPinEntry() {
   if (enteredPin.length === 4) {
     if (enteredPin === state.adminPin) {
       state.isAdmin = true;
+      localStorage.setItem("ADMIN_LOGGED_IN", "true");
       closeModal("pin-modal");
       renderApp();
       showToast("Admin access granted! 🔓 Edit mode activated.", "admin");
