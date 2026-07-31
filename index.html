@@ -92,8 +92,9 @@
         </div>
 
         <div class="admin-action-btns">
+          <button id="btn-admin-orders" class="btn-add-item" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">📦 Live Orders (<span id="admin-order-count">0</span>)</button>
           <button id="btn-admin-add-dish" class="btn-add-item">➕ Add New Dish</button>
-          <button id="btn-admin-bulk" class="btn-manage-cats">📥 Bulk Import/Export</button>
+          <button id="btn-admin-bulk" class="btn-manage-cats">📥 Bulk Import</button>
           <button id="btn-admin-cats" class="btn-manage-cats">📁 Categories</button>
           <button id="btn-admin-reset" class="btn-reset-data">🔄 Reset</button>
         </div>
@@ -369,6 +370,35 @@
             <button class="btn-manage-cats btn-close-modal">Cancel</button>
             <button id="btn-import-bulk" class="btn-add-item">🚀 Upload Items</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN LIVE ORDERS MANAGER MODAL -->
+  <div id="orders-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3>📦 Live Customer Orders (<span id="modal-orders-count">0</span>)</h3>
+        <button class="btn-close-drawer btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Order Status Filter Pills -->
+        <div class="category-bar" style="margin-bottom: 1rem;">
+          <button class="cat-btn order-filter-btn active" data-order-status="all">All Orders</button>
+          <button class="cat-btn order-filter-btn" data-order-status="pending">Pending ⏳</button>
+          <button class="cat-btn order-filter-btn" data-order-status="preparing">Preparing 👨‍🍳</button>
+          <button class="cat-btn order-filter-btn" data-order-status="ready">Ready 🔔</button>
+          <button class="cat-btn order-filter-btn" data-order-status="completed">Completed 💵</button>
+        </div>
+
+        <div id="orders-list-container" style="max-height: 55vh; overflow-y: auto; padding-right: 0.25rem;">
+          <!-- Orders inserted dynamically by app.js -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem;">
+          <button id="btn-clear-completed-orders" class="btn-reset-data">🧹 Clear Completed</button>
+          <button class="btn-manage-cats btn-close-modal">Close</button>
         </div>
       </div>
     </div>

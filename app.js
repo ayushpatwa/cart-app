@@ -14,6 +14,7 @@ let state = {
   adminPin: "1234",
   categories: [],
   items: [],
+  orders: [], // Live Customer Orders Array { id, items, total, status, time }
   
   // UI State
   isAdmin: false,
@@ -21,7 +22,8 @@ let state = {
   searchQuery: "",
   activeDietaryFilters: new Set(),
   cart: [], // Array of { itemId, qty }
-  editingItemId: null
+  editingItemId: null,
+  activeOrdersFilter: "all"
 };
 
 // LocalStorage Keys
@@ -33,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initData();
   setupEventListeners();
 
-  // Auto-sync polling every 20 seconds for customers to see live menu updates
+  // Auto-sync polling every 20 seconds for customers & admin live orders
   setInterval(() => {
     fetchCloudData(true);
   }, 20000);
@@ -56,6 +58,7 @@ function loadLocalData() {
       state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
       state.categories = parsed.categories || DEFAULT_MENU_DATA.categories;
       state.items = parsed.items || DEFAULT_MENU_DATA.items;
+      state.orders = parsed.orders || [];
     } catch (e) {
       console.error("Failed to parse saved data, reverting to defaults", e);
       resetToDefaultData();
@@ -91,6 +94,7 @@ async function fetchCloudData(silent = false) {
           state.adminPin = cloudData.adminPin || state.adminPin;
           state.categories = cloudData.categories || state.categories;
           state.items = cloudData.items;
+          state.orders = cloudData.orders || state.orders || [];
 
           // Save local cache
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -98,7 +102,8 @@ async function fetchCloudData(silent = false) {
             tagline: state.tagline,
             adminPin: state.adminPin,
             categories: state.categories,
-            items: state.items
+            items: state.items,
+            orders: state.orders
           }));
 
           updateCloudSyncStatus("synced");
@@ -107,7 +112,6 @@ async function fetchCloudData(silent = false) {
         }
       }
     } catch (err) {
-      // Retry after short delay if retries remain
       if (retries > 0) {
         await new Promise(r => setTimeout(r, 800));
       }
@@ -115,7 +119,6 @@ async function fetchCloudData(silent = false) {
     retries--;
   }
 
-  // Only update to offline status if explicitly loading or failed after all retries
   if (!silent) {
     updateCloudSyncStatus("offline");
   }
@@ -127,6 +130,7 @@ function resetToDefaultData() {
   state.adminPin = DEFAULT_MENU_DATA.adminPin;
   state.categories = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.categories));
   state.items = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.items));
+  state.orders = [];
   saveState();
 }
 
@@ -137,6 +141,7 @@ async function saveState() {
     adminPin: state.adminPin,
     categories: state.categories,
     items: state.items,
+    orders: state.orders || [],
     updatedAt: new Date().toISOString()
   };
 
@@ -817,6 +822,8 @@ function setupEventListeners() {
   document.getElementById("btn-admin-cats").addEventListener("click", openCategoryModal);
   const bulkBtn = document.getElementById("btn-admin-bulk");
   if (bulkBtn) bulkBtn.addEventListener("click", openBulkModal);
+  const ordersBtn = document.getElementById("btn-admin-orders");
+  if (ordersBtn) ordersBtn.addEventListener("click", openOrdersModal);
 
   document.getElementById("btn-admin-reset").addEventListener("click", () => {
     if (confirm("Reset menu data to factory defaults? All custom changes will be overwritten.")) {
@@ -831,6 +838,19 @@ function setupEventListeners() {
   if (importBtn) importBtn.addEventListener("click", importBulkItems);
   const exportBtn = document.getElementById("btn-export-bulk");
   if (exportBtn) exportBtn.addEventListener("click", exportItems);
+
+  // Orders Modal Buttons & Filters
+  const clearCompletedBtn = document.getElementById("btn-clear-completed-orders");
+  if (clearCompletedBtn) clearCompletedBtn.addEventListener("click", clearCompletedOrders);
+
+  document.querySelectorAll(".order-filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".order-filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.activeOrdersFilter = btn.dataset.orderStatus;
+      renderOrdersList();
+    });
+  });
 
   // Save Item Modal Button
   document.getElementById("btn-save-item").addEventListener("click", saveItemFromModal);
@@ -914,11 +934,20 @@ function openCheckoutTicketModal() {
   const orderNumElem = document.getElementById("ticket-order-id");
 
   let subtotal = 0;
+  const orderItemsList = [];
+
   ticketBody.innerHTML = state.cart.map(c => {
     const item = state.items.find(i => i.id === c.itemId);
     if (!item) return "";
     const lineTotal = item.price * c.qty;
     subtotal += lineTotal;
+
+    orderItemsList.push({
+      itemId: item.id,
+      name: item.name,
+      price: item.price,
+      qty: c.qty
+    });
 
     return `
       <div class="ticket-item-row">
@@ -943,9 +972,25 @@ function openCheckoutTicketModal() {
     orderNumElem.textContent = `Order #${orderId} • Pick Up Counter`;
   }
 
-  // Clear cart on checkout
+  // Record Order for Admin Panel
+  const newOrder = {
+    id: orderId,
+    items: orderItemsList,
+    subtotal: subtotal,
+    tax: tax,
+    total: grandTotal,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: new Date().toLocaleDateString(),
+    status: "Pending" // "Pending", "Preparing", "Ready", "Completed"
+  };
+
+  state.orders = state.orders || [];
+  state.orders.unshift(newOrder);
+
+  // Clear cart on checkout & sync to Cloud
   state.cart = [];
   saveCartState();
+  saveState();
   renderApp();
 
   modal.classList.add("open");
@@ -1097,4 +1142,119 @@ function exportItems() {
   a.click();
   URL.revokeObjectURL(url);
   showToast("Exported menu JSON backup file! 📄", "success");
+}
+
+/* Admin Live Orders Management */
+function openOrdersModal() {
+  const modal = document.getElementById("orders-modal");
+  renderOrdersList();
+  if (modal) modal.classList.add("open");
+}
+
+function renderOrdersList() {
+  const container = document.getElementById("orders-list-container");
+  const countBadge = document.getElementById("modal-orders-count");
+  if (!container) return;
+
+  const orders = state.orders || [];
+  const filter = state.activeOrdersFilter || "all";
+
+  let filtered = orders.filter(o => {
+    if (filter === "pending") return o.status === "Pending";
+    if (filter === "preparing") return o.status === "Preparing";
+    if (filter === "ready") return o.status === "Ready";
+    if (filter === "completed") return o.status === "Completed";
+    return true;
+  });
+
+  if (countBadge) countBadge.textContent = `${filtered.length} order${filtered.length === 1 ? '' : 's'}`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+        <p style="font-size: 3rem; margin-bottom: 0.5rem;">📦</p>
+        <h4 style="color: white; font-size: 1.1rem;">No orders in this category</h4>
+        <p style="font-size: 0.85rem;">New customer orders will appear here in real time!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(order => {
+    let statusClass = "warning";
+    let statusIcon = "⏳";
+    if (order.status === "Preparing") { statusClass = "admin"; statusIcon = "👨‍🍳"; }
+    else if (order.status === "Ready") { statusClass = "success"; statusIcon = "🔔"; }
+    else if (order.status === "Completed") { statusClass = "popular"; statusIcon = "💵"; }
+
+    return `
+      <div class="cart-item-card" style="flex-direction: column; align-items: stretch; gap: 0.75rem; border-left: 4px solid var(--primary); margin-bottom: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: white; font-size: 1.05rem;">Order #${escapeHtml(order.id)}</strong>
+            <span style="font-size: 0.775rem; color: var(--text-muted); margin-left: 0.5rem;">🕒 ${order.time}</span>
+          </div>
+
+          <span class="food-badge ${statusClass}">
+            ${statusIcon} ${order.status}
+          </span>
+        </div>
+
+        <div style="background: var(--bg-main); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+          ${(order.items || []).map(i => `<div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; color: #cbd5e1;"><span>${i.qty}x ${escapeHtml(i.name)}</span><span>$${(i.price * i.qty).toFixed(2)}</span></div>`).join('')}
+          <div style="border-top: 1px dashed var(--border-color); margin-top: 0.4rem; padding-top: 0.4rem; display: flex; justify-content: space-between; font-weight: 800; color: white;">
+            <span>Total Paid</span>
+            <span style="color: var(--accent-gold);">$${parseFloat(order.total).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end;">
+          ${order.status === "Pending" ? `<button class="btn-edit-dish btn-order-status" data-order-id="${order.id}" data-new-status="Preparing" style="background: rgba(139,92,246,0.2); color:#c4b5fd;">👨‍🍳 Start Preparing</button>` : ''}
+          ${order.status === "Preparing" || order.status === "Pending" ? `<button class="btn-edit-dish btn-order-status" data-order-id="${order.id}" data-new-status="Ready" style="background: rgba(16,185,129,0.2); color:#6ee7b7;">🔔 Mark Ready</button>` : ''}
+          ${order.status !== "Completed" ? `<button class="btn-edit-dish btn-order-status" data-order-id="${order.id}" data-new-status="Completed" style="background: rgba(255,179,0,0.2); color:#fde047;">💵 Complete & Pay</button>` : ''}
+          <button class="btn-delete-dish btn-delete-order" data-order-id="${order.id}">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Attach event handlers
+  container.querySelectorAll(".btn-order-status").forEach(btn => {
+    btn.addEventListener("click", () => {
+      updateOrderStatus(btn.dataset.orderId, btn.dataset.newStatus);
+    });
+  });
+
+  container.querySelectorAll(".btn-delete-order").forEach(btn => {
+    btn.addEventListener("click", () => {
+      deleteOrder(btn.dataset.orderId);
+    });
+  });
+}
+
+function updateOrderStatus(orderId, newStatus) {
+  const order = (state.orders || []).find(o => o.id === orderId);
+  if (!order) return;
+
+  order.status = newStatus;
+  saveState();
+  renderOrdersList();
+  renderAdminHeaderState();
+  showToast(`Order #${orderId} set to "${newStatus}"`, "admin");
+}
+
+function deleteOrder(orderId) {
+  state.orders = (state.orders || []).filter(o => o.id !== orderId);
+  saveState();
+  renderOrdersList();
+  renderAdminHeaderState();
+  showToast(`Deleted order #${orderId}`, "admin");
+}
+
+function clearCompletedOrders() {
+  state.orders = (state.orders || []).filter(o => o.status !== "Completed");
+  saveState();
+  renderOrdersList();
+  renderAdminHeaderState();
+  showToast("Cleared all completed orders!", "admin");
 }
