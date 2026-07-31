@@ -76,34 +76,47 @@ function loadLocalData() {
 }
 
 async function fetchCloudData(silent = false) {
-  try {
-    const res = await fetch(CLOUD_API_URL, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const cloudData = await res.json();
-      if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
-        state.cartName = cloudData.cartName || state.cartName;
-        state.tagline = cloudData.tagline || state.tagline;
-        state.adminPin = cloudData.adminPin || state.adminPin;
-        state.categories = cloudData.categories || state.categories;
-        state.items = cloudData.items;
+  let retries = 2;
+  while (retries >= 0) {
+    try {
+      const res = await fetch(CLOUD_API_URL, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (res.ok) {
+        const cloudData = await res.json();
+        if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+          state.cartName = cloudData.cartName || state.cartName;
+          state.tagline = cloudData.tagline || state.tagline;
+          state.adminPin = cloudData.adminPin || state.adminPin;
+          state.categories = cloudData.categories || state.categories;
+          state.items = cloudData.items;
 
-        // Save local cache
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          cartName: state.cartName,
-          tagline: state.tagline,
-          adminPin: state.adminPin,
-          categories: state.categories,
-          items: state.items
-        }));
+          // Save local cache
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            cartName: state.cartName,
+            tagline: state.tagline,
+            adminPin: state.adminPin,
+            categories: state.categories,
+            items: state.items
+          }));
 
-        updateCloudSyncStatus("synced");
-        renderApp();
+          updateCloudSyncStatus("synced");
+          renderApp();
+          return;
+        }
+      }
+    } catch (err) {
+      // Retry after short delay if retries remain
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 800));
       }
     }
-  } catch (err) {
-    if (!silent) console.warn("Using offline cached menu data", err);
+    retries--;
+  }
+
+  // Only update to offline status if explicitly loading or failed after all retries
+  if (!silent) {
     updateCloudSyncStatus("offline");
   }
 }
@@ -127,27 +140,40 @@ async function saveState() {
     updatedAt: new Date().toISOString()
   };
 
-  // 1. Save to local storage
+  // 1. Save to local storage immediately for fast UI response
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
 
-  // 2. Broadcast & Sync to Cloud Database for global live visibility across all devices
+  // 2. Broadcast & Sync to Cloud Database with automatic retry loop
   updateCloudSyncStatus("syncing");
-  try {
-    const res = await fetch(CLOUD_API_URL, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(dataToSave)
-    });
-    if (res.ok) {
-      updateCloudSyncStatus("synced");
-    } else {
-      updateCloudSyncStatus("error");
+
+  let retries = 3;
+  let success = false;
+
+  while (retries > 0 && !success) {
+    try {
+      const res = await fetch(CLOUD_API_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(dataToSave)
+      });
+      if (res.ok) {
+        success = true;
+        updateCloudSyncStatus("synced");
+      } else {
+        retries--;
+        if (retries > 0) await new Promise(r => setTimeout(r, 1000));
+      }
+    } catch (err) {
+      console.warn(`Cloud save attempt failed, retrying... (${retries} left)`, err);
+      retries--;
+      if (retries > 0) await new Promise(r => setTimeout(r, 1000));
     }
-  } catch (err) {
-    console.error("Cloud database sync failed:", err);
+  }
+
+  if (!success) {
     updateCloudSyncStatus("error");
   }
 }
