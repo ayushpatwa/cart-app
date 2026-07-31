@@ -220,6 +220,7 @@ function renderApp() {
   renderMenuItems();
   renderCartDrawer();
   renderCartBadge();
+  renderCustomerActiveTicketPill();
 }
 
 function renderAdminHeaderState() {
@@ -871,10 +872,23 @@ function setupEventListeners() {
     });
   });
 
-  // QR Code Modal Trigger
+  // QR Code Modal Trigger & Active Ticket Button
   const qrBtn = document.getElementById("btn-qr-view");
   if (qrBtn) {
     qrBtn.addEventListener("click", openQrModal);
+  }
+
+  const activeTicketBtn = document.getElementById("btn-view-active-ticket");
+  if (activeTicketBtn) {
+    activeTicketBtn.addEventListener("click", () => {
+      const savedOrderJson = sessionStorage.getItem("ACTIVE_CUSTOMER_ORDER");
+      if (savedOrderJson) {
+        try {
+          const savedOrder = JSON.parse(savedOrderJson);
+          openCheckoutTicketModal(savedOrder);
+        } catch (e) {}
+      }
+    });
   }
 }
 
@@ -925,7 +939,7 @@ function checkPinEntry() {
    Receipt & QR Modal Functions
    ========================================================================== */
 
-function openCheckoutTicketModal() {
+function openCheckoutTicketModal(existingOrder = null) {
   closeModal("cart-drawer-backdrop");
   const modal = document.getElementById("ticket-modal");
   const ticketBody = document.getElementById("ticket-items-list");
@@ -933,67 +947,110 @@ function openCheckoutTicketModal() {
   const ticketQrImg = document.getElementById("ticket-qr-img");
   const orderNumElem = document.getElementById("ticket-order-id");
 
-  let subtotal = 0;
-  const orderItemsList = [];
+  let orderToDisplay = existingOrder;
 
-  ticketBody.innerHTML = state.cart.map(c => {
-    const item = state.items.find(i => i.id === c.itemId);
-    if (!item) return "";
-    const lineTotal = item.price * c.qty;
-    subtotal += lineTotal;
+  if (!orderToDisplay) {
+    if (state.cart.length === 0) return;
 
-    orderItemsList.push({
-      itemId: item.id,
-      name: item.name,
-      price: item.price,
-      qty: c.qty
+    let subtotal = 0;
+    const orderItemsList = [];
+
+    state.cart.forEach(c => {
+      const item = state.items.find(i => i.id === c.itemId);
+      if (item) {
+        const lineTotal = item.price * c.qty;
+        subtotal += lineTotal;
+        orderItemsList.push({
+          itemId: item.id,
+          name: item.name,
+          price: item.price,
+          qty: c.qty
+        });
+      }
     });
 
-    return `
-      <div class="ticket-item-row">
-        <span>${c.qty}x ${escapeHtml(item.name)}</span>
-        <span>$${lineTotal.toFixed(2)}</span>
-      </div>
-    `;
-  }).join("");
+    const tax = subtotal * 0.08;
+    const grandTotal = subtotal + tax;
+    const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
 
-  const tax = subtotal * 0.08;
-  const grandTotal = subtotal + tax;
+    orderToDisplay = {
+      id: orderId,
+      items: orderItemsList,
+      subtotal: subtotal,
+      tax: tax,
+      total: grandTotal,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString(),
+      status: "Pending"
+    };
 
-  ticketTotal.textContent = `$${grandTotal.toFixed(2)}`;
-  
-  const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
+    state.orders = state.orders || [];
+    state.orders.unshift(orderToDisplay);
+
+    // Save active order ticket for customer's current session tab
+    sessionStorage.setItem("ACTIVE_CUSTOMER_ORDER", JSON.stringify(orderToDisplay));
+
+    // Clear cart on checkout & sync
+    state.cart = [];
+    saveCartState();
+    saveState();
+  }
+
+  // Fetch latest live order status from state.orders (e.g., if admin set to Preparing or Ready)
+  const liveOrder = (state.orders || []).find(o => o.id === orderToDisplay.id) || orderToDisplay;
+
+  // Render ticket items
+  ticketBody.innerHTML = (liveOrder.items || []).map(i => `
+    <div class="ticket-item-row">
+      <span>${i.qty}x ${escapeHtml(i.name)}</span>
+      <span>$${(i.price * i.qty).toFixed(2)}</span>
+    </div>
+  `).join("");
+
+  ticketTotal.textContent = `$${parseFloat(liveOrder.total).toFixed(2)}`;
+
   const currentUrl = window.location.origin + window.location.pathname;
-  
   if (ticketQrImg) {
-    ticketQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl + '?order=' + orderId)}`;
+    ticketQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl + '?order=' + liveOrder.id)}`;
   }
+  
   if (orderNumElem) {
-    orderNumElem.textContent = `Order #${orderId} • Pick Up Counter`;
+    let statusText = "Pending ⏳";
+    if (liveOrder.status === "Preparing") statusText = "Preparing 👨‍🍳";
+    else if (liveOrder.status === "Ready") statusText = "READY FOR PICKUP! 🔔";
+    else if (liveOrder.status === "Completed") statusText = "Completed 💵";
+
+    orderNumElem.innerHTML = `Order #${escapeHtml(liveOrder.id)} • <span style="color: var(--primary); font-weight: 800;">${statusText}</span>`;
   }
 
-  // Record Order for Admin Panel
-  const newOrder = {
-    id: orderId,
-    items: orderItemsList,
-    subtotal: subtotal,
-    tax: tax,
-    total: grandTotal,
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: new Date().toLocaleDateString(),
-    status: "Pending" // "Pending", "Preparing", "Ready", "Completed"
-  };
-
-  state.orders = state.orders || [];
-  state.orders.unshift(newOrder);
-
-  // Clear cart on checkout & sync to Cloud
-  state.cart = [];
-  saveCartState();
-  saveState();
-  renderApp();
+  renderCustomerActiveTicketPill();
+  renderCartBadge();
 
   modal.classList.add("open");
+}
+
+function renderCustomerActiveTicketPill() {
+  const activeBtn = document.getElementById("btn-view-active-ticket");
+  const ticketIdSpan = document.getElementById("active-ticket-id");
+  const ticketStatusSpan = document.getElementById("active-ticket-status");
+
+  const savedOrderJson = sessionStorage.getItem("ACTIVE_CUSTOMER_ORDER");
+  if (savedOrderJson) {
+    try {
+      const savedOrder = JSON.parse(savedOrderJson);
+      const liveOrder = (state.orders || []).find(o => o.id === savedOrder.id) || savedOrder;
+
+      if (activeBtn) activeBtn.style.display = "flex";
+      if (ticketIdSpan) ticketIdSpan.textContent = liveOrder.id;
+      if (ticketStatusSpan) {
+        ticketStatusSpan.textContent = liveOrder.status === "Ready" ? "READY! 🔔" : liveOrder.status;
+      }
+    } catch (e) {
+      if (activeBtn) activeBtn.style.display = "none";
+    }
+  } else {
+    if (activeBtn) activeBtn.style.display = "none";
+  }
 }
 
 function openQrModal() {

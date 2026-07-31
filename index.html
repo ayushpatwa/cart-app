@@ -56,7 +56,10 @@
         </div>
       </div>
 
-      <div class="hero-badge-group">
+      <div class="hero-badge-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button id="btn-view-active-ticket" class="btn-qr-view" style="display: none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 700; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+          🎟️ Order #<span id="active-ticket-id"></span> (<span id="active-ticket-status">Pending</span>)
+        </button>
         <button id="btn-qr-view" class="btn-qr-view">
           📱 Scan Cart QR
         </button>
