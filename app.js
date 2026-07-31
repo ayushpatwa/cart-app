@@ -1,6 +1,9 @@
 /**
- * Food Cart Menu Application - Interactive Logic & Admin System
+ * Food Cart Menu Application - Interactive Logic & Admin System with Global Cloud Sync
  */
+
+// Cloud API Endpoint for Realtime Shared Storage across all devices
+const CLOUD_API_URL = "https://jsonblob.com/api/jsonBlob/019fb925-1a3c-717a-8551-13c6058ee2ff";
 
 // Global State
 let state = {
@@ -29,11 +32,21 @@ const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 document.addEventListener("DOMContentLoaded", () => {
   initData();
   setupEventListeners();
-  renderApp();
+
+  // Auto-sync polling every 20 seconds for customers to see live menu updates
+  setInterval(() => {
+    fetchCloudData(true);
+  }, 20000);
 });
 
-// Load state from LocalStorage or initialize with defaults
-function initData() {
+// Load state from LocalStorage first, then fetch live Cloud Database
+async function initData() {
+  loadLocalData();
+  renderApp();
+  await fetchCloudData();
+}
+
+function loadLocalData() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
@@ -62,6 +75,39 @@ function initData() {
   }
 }
 
+async function fetchCloudData(silent = false) {
+  try {
+    const res = await fetch(CLOUD_API_URL, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const cloudData = await res.json();
+      if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+        state.cartName = cloudData.cartName || state.cartName;
+        state.tagline = cloudData.tagline || state.tagline;
+        state.adminPin = cloudData.adminPin || state.adminPin;
+        state.categories = cloudData.categories || state.categories;
+        state.items = cloudData.items;
+
+        // Save local cache
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          cartName: state.cartName,
+          tagline: state.tagline,
+          adminPin: state.adminPin,
+          categories: state.categories,
+          items: state.items
+        }));
+
+        updateCloudSyncStatus("synced");
+        renderApp();
+      }
+    }
+  } catch (err) {
+    if (!silent) console.warn("Using offline cached menu data", err);
+    updateCloudSyncStatus("offline");
+  }
+}
+
 function resetToDefaultData() {
   state.cartName = DEFAULT_MENU_DATA.cartName;
   state.tagline = DEFAULT_MENU_DATA.tagline;
@@ -71,15 +117,61 @@ function resetToDefaultData() {
   saveState();
 }
 
-function saveState() {
+async function saveState() {
   const dataToSave = {
     cartName: state.cartName,
     tagline: state.tagline,
     adminPin: state.adminPin,
     categories: state.categories,
-    items: state.items
+    items: state.items,
+    updatedAt: new Date().toISOString()
   };
+
+  // 1. Save to local storage
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+
+  // 2. Broadcast & Sync to Cloud Database for global live visibility across all devices
+  updateCloudSyncStatus("syncing");
+  try {
+    const res = await fetch(CLOUD_API_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(dataToSave)
+    });
+    if (res.ok) {
+      updateCloudSyncStatus("synced");
+    } else {
+      updateCloudSyncStatus("error");
+    }
+  } catch (err) {
+    console.error("Cloud database sync failed:", err);
+    updateCloudSyncStatus("error");
+  }
+}
+
+function updateCloudSyncStatus(status) {
+  const pill = document.getElementById("cloud-sync-pill");
+  if (!pill) return;
+
+  if (status === "syncing") {
+    pill.style.background = "rgba(245, 158, 11, 0.2)";
+    pill.style.color = "#fbbf24";
+    pill.style.borderColor = "rgba(245, 158, 11, 0.4)";
+    pill.innerHTML = "⏳ Syncing to Cloud...";
+  } else if (status === "synced") {
+    pill.style.background = "rgba(16, 185, 129, 0.15)";
+    pill.style.color = "#34d399";
+    pill.style.borderColor = "rgba(16, 185, 129, 0.3)";
+    pill.innerHTML = "☁️ Cloud Synced";
+  } else {
+    pill.style.background = "rgba(239, 68, 68, 0.15)";
+    pill.style.color = "#fca5a5";
+    pill.style.borderColor = "rgba(239, 68, 68, 0.3)";
+    pill.innerHTML = "⚡ Cached Locally";
+  }
 }
 
 function saveCartState() {
