@@ -227,6 +227,15 @@ function renderAdminHeaderState() {
   const adminBtn = document.getElementById("btn-admin-toggle");
   const adminToolbar = document.getElementById("admin-toolbar");
   const adminPill = document.getElementById("admin-mode-pill");
+  const orderBadge = document.getElementById("admin-order-count");
+
+  const orders = state.orders || [];
+  // Count active non-completed orders (Pending, Preparing, Ready)
+  const activeCount = orders.filter(o => o.status !== "Completed").length;
+
+  if (orderBadge) {
+    orderBadge.textContent = activeCount;
+  }
 
   if (state.isAdmin) {
     adminBtn.classList.add("active");
@@ -235,7 +244,11 @@ function renderAdminHeaderState() {
     if (adminPill) adminPill.style.display = "flex";
   } else {
     adminBtn.classList.remove("active");
-    adminBtn.innerHTML = `🔒 Admin Login`;
+    if (activeCount > 0) {
+      adminBtn.innerHTML = `🔒 Admin Login <span style="background: var(--primary); color: white; border-radius: 99px; padding: 0.15rem 0.55rem; font-size: 0.75rem; font-weight: 800; margin-left: 0.35rem; box-shadow: 0 0 10px rgba(255,87,34,0.6);">⚡ ${activeCount} NEW</span>`;
+    } else {
+      adminBtn.innerHTML = `🔒 Admin Login`;
+    }
     if (adminToolbar) adminToolbar.style.display = "none";
     if (adminPill) adminPill.style.display = "none";
   }
