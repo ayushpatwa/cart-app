@@ -1,0 +1,23 @@
+{
+  "name": "Street Bytes Food Cart",
+  "short_name": "StreetBytes",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1219",
+  "theme_color": "#ff5722",
+  "description": "Artisanal Street Eats & Live Food Cart Ordering",
+  "icons": [
+    {
+      "src": "https://api.iconify.design/emojione-v1:taco.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://api.iconify.design/emojione-v1:taco.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,9 +1,51 @@
 /**
- * Food Cart Menu Application - Interactive Logic & Admin System with Global Cloud Sync
+ * Food Cart Menu Application - Interactive Logic & Admin System with Self-Healing Global Cloud Sync
  */
 
-// Cloud API Endpoint for Realtime Shared Storage across all devices
-const CLOUD_API_URL = "https://jsonblob.com/api/jsonBlob/019fb925-1a3c-717a-8551-13c6058ee2ff";
+// Active Primary Cloud API Endpoint
+const DEFAULT_CLOUD_API_URL = "https://jsonblob.com/api/jsonBlob/019fc2df-784d-779a-a563-9add0445d984";
+
+function getCloudUrl() {
+  return localStorage.getItem("CUSTOM_CLOUD_API_URL") || DEFAULT_CLOUD_API_URL;
+}
+
+// Self-healing: Dynamically create a fresh cloud storage bin if ever needed
+async function createNewCloudBin(dataToSave) {
+  try {
+    const res = await fetch("https://jsonblob.com/api/jsonBlob", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(dataToSave)
+    });
+    if (res.ok || res.status === 201) {
+      const loc = res.headers.get("location");
+      if (loc) {
+        const fullUrl = loc.startsWith("http") ? loc : `https://jsonblob.com${loc}`;
+        localStorage.setItem("CUSTOM_CLOUD_API_URL", fullUrl);
+        console.log("Created self-healed Cloud Storage Bin:", fullUrl);
+        return fullUrl;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to auto-create cloud bin", e);
+  }
+  return getCloudUrl();
+}
+
+function getAppStateData() {
+  return {
+    cartName: state.cartName,
+    tagline: state.tagline,
+    adminPin: state.adminPin,
+    categories: state.categories,
+    items: state.items,
+    orders: state.orders || [],
+    updatedAt: new Date().toISOString()
+  };
+}
 
 // Global State
 let state = {
@@ -84,13 +126,24 @@ function loadLocalData() {
 }
 
 async function fetchCloudData(silent = false) {
+  let url = getCloudUrl();
   let retries = 2;
+
   while (retries >= 0) {
     try {
-      const res = await fetch(CLOUD_API_URL, {
+      const res = await fetch(url, {
         headers: { 'Accept': 'application/json' },
         cache: 'no-cache'
       });
+
+      if (res.status === 404) {
+        console.warn("Cloud Blob 404, self-healing & creating dynamic storage bin...");
+        const dataToSave = getAppStateData();
+        url = await createNewCloudBin(dataToSave);
+        updateCloudSyncStatus("synced");
+        return;
+      }
+
       if (res.ok) {
         const cloudData = await res.json();
         if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
@@ -140,28 +193,21 @@ function resetToDefaultData() {
 }
 
 async function saveState() {
-  const dataToSave = {
-    cartName: state.cartName,
-    tagline: state.tagline,
-    adminPin: state.adminPin,
-    categories: state.categories,
-    items: state.items,
-    orders: state.orders || [],
-    updatedAt: new Date().toISOString()
-  };
+  const dataToSave = getAppStateData();
 
-  // 1. Save to local storage immediately for fast UI response
+  // 1. Save to local storage
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
 
-  // 2. Broadcast & Sync to Cloud Database with automatic retry loop
+  // 2. Broadcast & Sync to Cloud Database
   updateCloudSyncStatus("syncing");
 
+  let url = getCloudUrl();
   let retries = 3;
   let success = false;
 
   while (retries > 0 && !success) {
     try {
-      const res = await fetch(CLOUD_API_URL, {
+      const res = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -169,6 +215,14 @@ async function saveState() {
         },
         body: JSON.stringify(dataToSave)
       });
+
+      if (res.status === 404) {
+        url = await createNewCloudBin(dataToSave);
+        success = true;
+        updateCloudSyncStatus("synced");
+        break;
+      }
+
       if (res.ok) {
         success = true;
         updateCloudSyncStatus("synced");
@@ -177,7 +231,6 @@ async function saveState() {
         if (retries > 0) await new Promise(r => setTimeout(r, 1000));
       }
     } catch (err) {
-      console.warn(`Cloud save attempt failed, retrying... (${retries} left)`, err);
       retries--;
       if (retries > 0) await new Promise(r => setTimeout(r, 1000));
     }
