@@ -451,7 +451,7 @@ function renderMenuItems() {
         <div class="card-body">
           <div class="card-header-line">
             <h4 class="food-title">${escapeHtml(item.name)}</h4>
-            <span class="food-price">$${parseFloat(item.price).toFixed(2)}</span>
+            <span class="food-price">₹${item.price}</span>
           </div>
 
           <p class="food-desc">${escapeHtml(item.description)}</p>
@@ -462,7 +462,7 @@ function renderMenuItems() {
             <button class="btn-add-cart" 
                     data-item-id="${item.id}" 
                     ${isSoldOut ? 'disabled' : ''}>
-              ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add $${parseFloat(item.price).toFixed(2)}`}
+              ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add ₹${item.price}`}
             </button>
           </div>
         </div>
@@ -589,9 +589,9 @@ function renderCartDrawer() {
         <p style="font-size: 0.85rem; margin-top: 0.3rem;">Select delicious items from the food cart menu to get started!</p>
       </div>
     `;
-    if (subtotalElem) subtotalElem.textContent = "$0.00";
-    if (taxElem) taxElem.textContent = "$0.00";
-    if (totalElem) totalElem.textContent = "$0.00";
+    if (subtotalElem) subtotalElem.textContent = "₹0";
+    if (taxElem) taxElem.textContent = "₹0";
+    if (totalElem) totalElem.textContent = "₹0";
     if (checkoutBtn) checkoutBtn.disabled = true;
     return;
   }
@@ -612,7 +612,7 @@ function renderCartDrawer() {
         
         <div class="cart-item-details">
           <div class="cart-item-title">${escapeHtml(item.name)}</div>
-          <div class="cart-item-price">$${parseFloat(item.price).toFixed(2)} each</div>
+          <div class="cart-item-price">₹${item.price} each</div>
         </div>
 
         <div class="qty-controls">
@@ -624,12 +624,12 @@ function renderCartDrawer() {
     `;
   }).join("");
 
-  const tax = subtotal * 0.08; // 8% sales tax
+  const tax = subtotal * 0.05; // 5% GST/Tax
   const total = subtotal + tax;
 
-  if (subtotalElem) subtotalElem.textContent = `$${subtotal.toFixed(2)}`;
-  if (taxElem) taxElem.textContent = `$${tax.toFixed(2)}`;
-  if (totalElem) totalElem.textContent = `$${total.toFixed(2)}`;
+  if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
+  if (taxElem) taxElem.textContent = `₹${tax.toFixed(0)}`;
+  if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
 
   // Attach quantity event listeners
@@ -1076,11 +1076,11 @@ function openCheckoutTicketModal(existingOrder = null) {
   ticketBody.innerHTML = (liveOrder.items || []).map(i => `
     <div class="ticket-item-row">
       <span>${i.qty}x ${escapeHtml(i.name)}</span>
-      <span>$${(i.price * i.qty).toFixed(2)}</span>
+      <span>₹${(i.price * i.qty).toFixed(0)}</span>
     </div>
   `).join("");
 
-  ticketTotal.textContent = `$${parseFloat(liveOrder.total).toFixed(2)}`;
+  ticketTotal.textContent = `₹${parseFloat(liveOrder.total).toFixed(0)}`;
 
   const currentUrl = window.location.origin + window.location.pathname;
   if (ticketQrImg) {
@@ -1331,10 +1331,10 @@ function renderOrdersList() {
         </div>
 
         <div style="background: var(--bg-main); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
-          ${(order.items || []).map(i => `<div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; color: #cbd5e1;"><span>${i.qty}x ${escapeHtml(i.name)}</span><span>$${(i.price * i.qty).toFixed(2)}</span></div>`).join('')}
+          ${(order.items || []).map(i => `<div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; color: #cbd5e1;"><span>${i.qty}x ${escapeHtml(i.name)}</span><span>₹${(i.price * i.qty).toFixed(0)}</span></div>`).join('')}
           <div style="border-top: 1px dashed var(--border-color); margin-top: 0.4rem; padding-top: 0.4rem; display: flex; justify-content: space-between; font-weight: 800; color: white;">
             <span>Total Paid</span>
-            <span style="color: var(--accent-gold);">$${parseFloat(order.total).toFixed(2)}</span>
+            <span style="color: var(--accent-gold);">₹${parseFloat(order.total).toFixed(0)}</span>
           </div>
         </div>
 
