@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Street Bytes Food Cart | Mobile Menu & Order Portal</title>
-  <meta name="description" content="Mobile food cart menu with live ordering, dietary filters, and mobile admin panel.">
-  <meta name="theme-color" content="#0f1219">
+  <title>Lala Hoti Lal Halwai & Cafe | Pure Veg Station</title>
+  <meta name="description" content="Lala Hoti Lal Halwai & Cafe - Pure Veg Street Eats, Chai, Momos, Sandwiches & Shakes.">
+  <meta name="theme-color" content="#8B1E1E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="styles.css">
@@ -16,16 +16,16 @@
   <header class="app-header">
     <div class="header-container">
       <div class="brand-info">
-        <div class="cart-logo">🌮</div>
+        <img src="./assets/images/logo.jpg" alt="Lala Ji Food Station" class="brand-logo-img" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-gold); box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);" />
         <div class="brand-text">
-          <h1>Street Bytes Food Cart</h1>
-          <p>📍 Downtown Plaza • Cart #04 • 🕒 11 AM - 9 PM</p>
+          <h1>Lala Hoti Lal Halwai & Cafe</h1>
+          <p>📍 Pure Veg Station • 🕒 10 AM - 10 PM • <span style="color: var(--pure-veg-green); font-weight: 800;">🌱 100% PURE VEG</span></p>
         </div>
       </div>
 
       <div class="header-actions">
         <!-- Live Cloud Sync Status Indicator -->
-        <div id="cloud-sync-pill" class="meta-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600;">
+        <div id="cloud-sync-pill" class="meta-tag" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">
           ☁️ Cloud Synced
         </div>
 
@@ -44,24 +44,28 @@
 
   <!-- HERO BANNER -->
   <section class="hero-banner">
-    <div class="hero-card">
-      <div class="hero-content">
-        <h2>Fresh Street Eats, <span>Made Fresh Daily</span></h2>
-        <p>Gourmet smash burgers, authentic street tacos, crispy loaded fries & craft lemonades. Order directly at our cart window!</p>
+    <div class="hero-card" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(139, 30, 30, 0.95), rgba(74, 12, 12, 0.95)); border: 1px solid var(--border-color);">
+      <div class="hero-banner-image-container" style="position: absolute; right: 0; top: 0; bottom: 0; width: 45%; max-width: 450px; opacity: 0.85; z-index: 1;">
+        <img src="./assets/images/banner.jpg" alt="Lala Hoti Lal Halwai & Cafe Banner" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 0 14px 14px 0;" />
+      </div>
+
+      <div class="hero-content" style="position: relative; z-index: 2; max-width: 60%;">
+        <h2>Lala Hoti Lal <span>Halwai & Cafe</span></h2>
+        <p>Pure Veg Artisanal Street Eats, Fresh Kullhad Chai, Crispy Momos, Gourmet Sandwiches & Cafe Coolers. Prepared fresh daily!</p>
         
         <div class="cart-meta-tags">
-          <span class="meta-tag">🔥 100% Angus Beef</span>
-          <span class="meta-tag">🌱 Plant-Based Options</span>
-          <span class="meta-tag">⚡ Fast Counter Service</span>
+          <span class="meta-tag pure-veg-badge" style="background: #1E5631; color: white; font-weight: 800; border: none;">🌱 100% PURE VEG</span>
+          <span class="meta-tag">☕ Fresh Kullhad Chai</span>
+          <span class="meta-tag">🥪 Grilled Sandwiches & Momos</span>
         </div>
       </div>
 
-      <div class="hero-badge-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <div class="hero-badge-group" style="position: relative; z-index: 2; display: flex; flex-direction: column; gap: 0.5rem;">
         <button id="btn-view-active-ticket" class="btn-qr-view" style="display: none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 700; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
           🎟️ Order #<span id="active-ticket-id"></span> (<span id="active-ticket-status">Pending</span>)
         </button>
         <button id="btn-qr-view" class="btn-qr-view">
-          📱 Scan Cart QR
+          📱 Scan Cafe QR
         </button>
       </div>
     </div>
@@ -299,7 +303,7 @@
       <div class="modal-body">
         <div class="ticket-card">
           <div class="ticket-header">
-            <h4>STREET BYTES CART</h4>
+            <h4 style="color: var(--primary); font-weight: 800; letter-spacing: 0.5px;">LALA HOTI LAL HALWAI & CAFE</h4>
             <p id="ticket-order-id" style="font-size: 0.8rem; color: #64748b;">Order #SB-8924 • Pick Up Counter</p>
           </div>
 

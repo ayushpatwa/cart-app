@@ -49,10 +49,10 @@ function getAppStateData() {
 
 // Global State
 let state = {
-  cartName: "Street Bytes Food Cart",
-  tagline: "Artisanal Street Eats & Gourmet Comfort Food",
-  location: "Downtown Plaza • Cart #04",
-  hours: "Mon-Sat: 11:00 AM - 9:00 PM",
+  cartName: "Lala Hoti Lal Halwai & Cafe",
+  tagline: "Pure Veg Artisanal Street Eats, Snacks & Cafe Favorites 🌱",
+  location: "Pure Veg Station • Cart #04",
+  hours: "Open Daily: 10:00 AM - 10:00 PM",
   adminPin: "1234",
   categories: [],
   items: [],
@@ -69,7 +69,7 @@ let state = {
 };
 
 // LocalStorage Keys
-const STORAGE_KEY = "FOOD_CART_MENU_DATA_V2_PDF_FINAL";
+const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V3";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready

@@ -5,30 +5,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Color Palette - Vibrant Street Food Theme */
-  --bg-main: #0f1219;
-  --bg-card: #181d28;
-  --bg-card-hover: #212736;
-  --bg-surface: #1e2433;
-  --bg-glass: rgba(24, 29, 40, 0.75);
+  /* Color Palette - Lala Hoti Lal Halwai & Cafe Theme (Royal Crimson, Warm Cream & Gold) */
+  --bg-main: #14080a;
+  --bg-card: #200d11;
+  --bg-card-hover: #2d1318;
+  --bg-surface: #281015;
+  --bg-glass: rgba(32, 13, 17, 0.88);
   
-  --primary: #ff5722;
-  --primary-hover: #f44336;
-  --primary-light: rgba(255, 87, 34, 0.15);
+  --primary: #a72323;
+  --primary-hover: #c42d2d;
+  --primary-light: rgba(167, 35, 35, 0.2);
   
-  --accent-gold: #ffb300;
-  --accent-gold-light: rgba(255, 179, 0, 0.15);
+  --accent-gold: #e0b448;
+  --accent-gold-light: rgba(224, 180, 72, 0.2);
+  
+  --pure-veg-green: #10b981;
+  --pure-veg-bg: #1e5631;
   
   --admin-purple: #9c27b0;
   --admin-purple-light: rgba(156, 39, 176, 0.2);
   --admin-glow: 0 0 15px rgba(156, 39, 176, 0.4);
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dark: #0f172a;
+  --text-main: #fcf9f4;
+  --text-muted: #d1b8a5;
+  --text-dark: #14080a;
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(255, 87, 34, 0.3);
+  --border-color: rgba(224, 180, 72, 0.22);
+  --border-highlight: rgba(167, 35, 35, 0.4);
   
   --danger: #ef4444;
   --success: #10b981;
@@ -39,10 +42,10 @@
   --radius-lg: 20px;
   --radius-full: 9999px;
   
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 25px rgba(255, 87, 34, 0.25);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(167, 35, 35, 0.35);
   
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
@@ -65,8 +68,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(255, 87, 34, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(255, 179, 0, 0.05) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, rgba(167, 35, 35, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(224, 180, 72, 0.12) 0%, transparent 45%);
 }
 
 button {
@@ -126,7 +129,7 @@ input, select, textarea {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #fff, #cbd5e1);
+  background: linear-gradient(90deg, #ffffff, var(--accent-gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
@@ -202,8 +205,8 @@ input, select, textarea {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, rgba(30, 36, 51, 0.9), rgba(24, 29, 40, 0.95)),
-              url('https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?auto=format&fit=crop&w=1400&q=80') center/cover;
+  background: linear-gradient(135deg, rgba(32, 13, 17, 0.95), rgba(139, 30, 30, 0.95)),
+              url('./assets/images/banner.jpg') center/cover;
   background-blend-mode: overlay;
   border-radius: var(--radius-lg);
   padding: 2.2rem;
@@ -227,7 +230,7 @@ input, select, textarea {
 }
 
 .hero-content h2 span {
-  color: var(--primary);
+  color: var(--accent-gold);
 }
 
 .hero-content p {

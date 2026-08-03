@@ -1,8 +1,8 @@
-// Menu dataset redesigned from PDF menu specifications
+// Menu dataset redesigned for Lala Hoti Lal Halwai & Cafe
 const DEFAULT_MENU_DATA = {
-  cartName: "Street Bytes Cafe & Eats",
-  tagline: "Fresh Chai, Crunchy Snacks, Momos & Grilled Bites",
-  location: "Cart #04 • Downtown Food Street",
+  cartName: "Lala Hoti Lal Halwai & Cafe",
+  tagline: "Pure Veg Artisanal Street Eats, Snacks & Cafe Favorites 🌱",
+  location: "Pure Veg Station • Cart #04",
   hours: "Open Daily: 10:00 AM - 10:00 PM",
   adminPin: "1234",
   currency: "₹",
