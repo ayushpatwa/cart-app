@@ -44,14 +44,23 @@
 
   <!-- HERO BANNER -->
   <section class="hero-banner">
-    <div class="hero-card" style="padding: 0; position: relative; overflow: hidden; background: #FAF4E8; border: 1px solid var(--border-color); box-shadow: var(--shadow-md); border-radius: var(--radius-lg);">
-      <img src="./assets/images/banner.jpg" alt="Lala Hoti Lal Halwai & Cafe Banner" style="width: 100%; height: auto; max-height: 280px; object-fit: contain; display: block; background: #FAF4E8;" />
-      
-      <div style="position: absolute; right: 1rem; bottom: 1rem; z-index: 5; display: flex; flex-direction: column; gap: 0.5rem;">
+    <div class="hero-card">
+      <div class="hero-content">
+        <h2>Lala Hoti Lal <span>Halwai & Cafe</span></h2>
+        <p>Pure Veg Artisanal Street Eats, Fresh Kullhad Chai, Crispy Momos, Gourmet Sandwiches & Cafe Coolers. Prepared fresh daily!</p>
+        
+        <div class="cart-meta-tags">
+          <span class="meta-tag pure-veg-badge" style="background: #1E5631; color: white; font-weight: 800; border: none;">🌱 100% PURE VEG</span>
+          <span class="meta-tag">☕ Fresh Kullhad Chai</span>
+          <span class="meta-tag">🥪 Grilled Sandwiches & Momos</span>
+        </div>
+      </div>
+
+      <div class="hero-badge-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
         <button id="btn-view-active-ticket" class="btn-qr-view" style="display: none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 700; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
           🎟️ Order #<span id="active-ticket-id"></span> (<span id="active-ticket-status">Pending</span>)
         </button>
-        <button id="btn-qr-view" class="btn-qr-view" style="background: rgba(139, 30, 30, 0.9); color: white; border: 1px solid var(--accent-gold); backdrop-filter: blur(8px);">
+        <button id="btn-qr-view" class="btn-qr-view">
           📱 Scan Cafe QR
         </button>
       </div>
