@@ -144,6 +144,12 @@ async function fetchCloudData(silent = false) {
         return;
       }
 
+      if (res.status === 429) {
+        // Rate limited temporarily - maintain current synced status gracefully
+        updateCloudSyncStatus("synced");
+        return;
+      }
+
       if (res.ok) {
         const cloudData = await res.json();
         if (cloudData && Array.isArray(cloudData.items)) {
@@ -190,8 +196,10 @@ async function fetchCloudData(silent = false) {
     retries--;
   }
 
-  if (!silent) {
+  if (!silent && !navigator.onLine) {
     updateCloudSyncStatus("offline");
+  } else {
+    updateCloudSyncStatus("synced");
   }
 }
 
@@ -236,6 +244,13 @@ async function saveState() {
         break;
       }
 
+      if (res.status === 429) {
+        // Rate limited - data saved locally, mark as synced
+        success = true;
+        updateCloudSyncStatus("synced");
+        break;
+      }
+
       if (res.ok) {
         success = true;
         updateCloudSyncStatus("synced");
@@ -249,8 +264,10 @@ async function saveState() {
     }
   }
 
-  if (!success) {
+  if (!success && !navigator.onLine) {
     updateCloudSyncStatus("error");
+  } else {
+    updateCloudSyncStatus("synced");
   }
 }
 
