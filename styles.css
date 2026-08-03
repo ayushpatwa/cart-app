@@ -197,16 +197,42 @@ input, select, textarea {
   box-shadow: var(--admin-glow);
 }
 
-/* Hero Section */
+/* Hero Section & Responsive Banner */
 .hero-banner {
   max-width: 1280px;
   margin: 1.5rem auto 0;
   padding: 0 1.5rem;
 }
 
+.banner-wrapper {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+}
+
+.hero-banner-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 6;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hero-banner-img {
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: #181d28;
+  }
+}
+
 .hero-card {
-  background: linear-gradient(135deg, rgba(24, 29, 40, 0.92), rgba(15, 18, 25, 0.95)),
-              url('./assets/images/banner.jpg') center/cover;
+  background: var(--bg-card);
   background-blend-mode: overlay;
   border-radius: var(--radius-lg);
   padding: 2.2rem;
