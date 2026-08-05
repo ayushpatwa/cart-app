@@ -798,14 +798,6 @@ function renderCartDrawer() {
   if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
   if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
-
-  // Attach quantity event listeners
-  bodyContainer.querySelectorAll(".btn-minus").forEach(btn => {
-    btn.addEventListener("click", () => updateCartQty(btn.dataset.itemId, -1));
-  });
-  bodyContainer.querySelectorAll(".btn-plus").forEach(btn => {
-    btn.addEventListener("click", () => updateCartQty(btn.dataset.itemId, 1));
-  });
 }
 
 /* ==========================================================================
