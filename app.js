@@ -591,9 +591,41 @@ function saveCartState() {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cart));
 }
 
+function openCartDrawerModal() {
+  const backdrop = document.getElementById("cart-drawer-backdrop");
+  if (backdrop) {
+    backdrop.style.cssText = "display: block !important; opacity: 1 !important; pointer-events: auto !important; position: fixed !important; inset: 0 !important; z-index: 99999 !important; background: rgba(0,0,0,0.7) !important;";
+    backdrop.classList.add("open");
+  }
+  const drawer = backdrop ? backdrop.querySelector(".cart-drawer") : null;
+  if (drawer) {
+    drawer.style.cssText = "transform: translate(0, 0) !important; display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 100000 !important;";
+  }
+}
+window.openCartDrawerModal = openCartDrawerModal;
+
+function closeCartDrawerModal() {
+  const backdrop = document.getElementById("cart-drawer-backdrop");
+  if (backdrop) {
+    backdrop.classList.remove("open");
+    backdrop.style.display = "none";
+    backdrop.style.opacity = "0";
+    backdrop.style.pointerEvents = "none";
+  }
+  const drawer = backdrop ? backdrop.querySelector(".cart-drawer") : null;
+  if (drawer) {
+    drawer.style.cssText = "";
+  }
+}
+window.closeCartDrawerModal = closeCartDrawerModal;
+
 function addToCart(itemId) {
   if (!itemId) return;
   const cleanId = String(itemId).trim();
+
+  if (!state.cart || !Array.isArray(state.cart)) {
+    state.cart = [];
+  }
 
   // Find item by ID in active state or default menu
   let item = state.items.find(i => String(i.id).trim() === cleanId) ||
@@ -626,12 +658,8 @@ function addToCart(itemId) {
   renderCartDrawer();
   renderCartBadge();
 
-  // Auto-open Order Bag Drawer so customer immediately sees item in their cart bag
-  const drawerBackdrop = document.getElementById("cart-drawer-backdrop");
-  if (drawerBackdrop) {
-    drawerBackdrop.style.display = "block";
-    drawerBackdrop.classList.add("open");
-  }
+  // Force open Order Bag Drawer on screen
+  openCartDrawerModal();
 
   showToast(`Added "${item.name}" to your order bag! 🛍️`, "success");
 }
@@ -652,6 +680,7 @@ function updateCartQty(itemId, delta) {
   renderCartDrawer();
   renderCartBadge();
 }
+window.updateCartQty = updateCartQty;
 
 function renderCartBadge() {
   const floatBtn = document.getElementById("floating-cart-btn");
@@ -1036,30 +1065,37 @@ function setupEventListeners() {
     });
   }
 
+  // Global document click listener for fail-safe + Add button catching
+  document.addEventListener("click", function(e) {
+    const addBtn = e.target.closest(".btn-add-cart");
+    if (addBtn) {
+      e.stopPropagation();
+      const itemId = addBtn.getAttribute("data-item-id") || addBtn.dataset.itemId;
+      if (itemId && window.addToCart) {
+        window.addToCart(itemId);
+      }
+    }
+  });
+
   // Cart Drawer open/close
-  document.getElementById("floating-cart-btn").addEventListener("click", () => {
-    const backdrop = document.getElementById("cart-drawer-backdrop");
-    if (backdrop) {
-      backdrop.style.display = "block";
-      backdrop.classList.add("open");
-    }
-  });
+  const floatBtn = document.getElementById("floating-cart-btn");
+  if (floatBtn) {
+    floatBtn.addEventListener("click", openCartDrawerModal);
+  }
 
-  document.getElementById("btn-close-cart").addEventListener("click", () => {
-    const backdrop = document.getElementById("cart-drawer-backdrop");
-    if (backdrop) {
-      backdrop.classList.remove("open");
-      backdrop.style.display = "none";
-    }
-  });
+  const closeCartBtn = document.getElementById("btn-close-cart");
+  if (closeCartBtn) {
+    closeCartBtn.addEventListener("click", closeCartDrawerModal);
+  }
 
-  document.getElementById("cart-drawer-backdrop").addEventListener("click", (e) => {
-    if (e.target.id === "cart-drawer-backdrop") {
-      const backdrop = document.getElementById("cart-drawer-backdrop");
-      backdrop.classList.remove("open");
-      backdrop.style.display = "none";
-    }
-  });
+  const backdrop = document.getElementById("cart-drawer-backdrop");
+  if (backdrop) {
+    backdrop.addEventListener("click", (e) => {
+      if (e.target.id === "cart-drawer-backdrop") {
+        closeCartDrawerModal();
+      }
+    });
+  }
 
   // Checkout Button
   document.getElementById("btn-checkout").addEventListener("click", () => {
