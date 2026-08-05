@@ -1281,7 +1281,20 @@ function openCheckoutTicketModal(existingOrder = null) {
     if (state.cart.length === 0) return;
 
     const customerNameInput = document.getElementById("customer-name-input");
-    const customerName = (customerNameInput && customerNameInput.value.trim()) ? customerNameInput.value.trim() : "Guest Customer";
+    const customerName = customerNameInput ? customerNameInput.value.trim() : "";
+
+    if (!customerName) {
+      if (customerNameInput) {
+        customerNameInput.style.borderColor = "#ef4444";
+        customerNameInput.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+        customerNameInput.focus();
+      }
+      showToast("Please enter your name for pickup before placing your order! 👤", "error");
+      return;
+    } else if (customerNameInput) {
+      customerNameInput.style.borderColor = "var(--border-color)";
+      customerNameInput.style.boxShadow = "none";
+    }
 
     let subtotal = 0;
     const orderItemsList = [];
