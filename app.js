@@ -1518,15 +1518,23 @@ function renderOrdersList() {
     else if (order.status === "Completed") { statusClass = "popular"; statusIcon = "💵"; }
 
     return `
-      <div class="cart-item-card" style="flex-direction: column; align-items: stretch; gap: 0.75rem; border-left: 4px solid var(--primary); margin-bottom: 0.85rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="cart-item-card" style="flex-direction: column; align-items: stretch; gap: 0.75rem; border-left: 5px solid var(--primary); margin-bottom: 0.85rem; background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md);">
+        
+        <!-- CALLOUT CUSTOMER NAME BANNER FOR ADMIN -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 179, 0, 0.12); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 179, 0, 0.3);">
           <div>
-            <strong style="color: white; font-size: 1.05rem;">Order #${escapeHtml(order.id)} • 👤 ${escapeHtml(order.customerName || "Guest")}</strong>
-            <span style="font-size: 0.775rem; color: var(--text-muted); margin-left: 0.5rem;">🕒 ${order.time}</span>
+            <span style="font-size: 0.725rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700; display: block;">🗣️ CALLOUT CUSTOMER NAME:</span>
+            <strong style="color: var(--accent-gold); font-size: 1.25rem; font-weight: 800;">👤 ${escapeHtml(order.customerName || "Guest")}</strong>
           </div>
+          <div style="text-align: right;">
+            <span style="font-weight: 800; color: white; font-size: 0.95rem;">Order #${escapeHtml(order.id)}</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">🕒 ${order.time}</span>
+          </div>
+        </div>
 
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <span class="food-badge ${statusClass}">
-            ${statusIcon} ${order.status}
+            ${statusIcon} Status: ${order.status}
           </span>
         </div>
 
