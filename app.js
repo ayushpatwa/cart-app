@@ -176,15 +176,9 @@ function loadLocalData() {
     resetToDefaultData();
   }
 
-  // Load saved cart items
-  const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-  if (savedCart) {
-    try {
-      state.cart = JSON.parse(savedCart);
-    } catch (e) {
-      state.cart = [];
-    }
-  }
+  // Always reset customer cart bag on page refresh as requested
+  state.cart = [];
+  localStorage.removeItem(CART_STORAGE_KEY);
 
   // Restore Admin login session across page refreshes
   if (localStorage.getItem("ADMIN_LOGGED_IN") === "true") {
