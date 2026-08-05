@@ -159,6 +159,15 @@
           <span id="cart-total">₹0</span>
         </div>
 
+        <!-- Customer Name Field -->
+        <div class="customer-name-field" style="margin-top: 0.85rem; margin-bottom: 0.85rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.35rem;">
+            👤 Your Name for Pickup Callout:
+          </label>
+          <input type="text" id="customer-name-input" placeholder="e.g. Rahul / Priya / Alex" 
+                 style="width: 100%; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-main); color: white; font-size: 0.875rem;" />
+        </div>
+
         <button id="btn-checkout" class="btn-checkout" disabled>
           🎟️ Place Order at Pickup Window
         </button>
@@ -311,6 +320,7 @@
           <div class="ticket-header">
             <h4 style="color: var(--primary); font-weight: 800; letter-spacing: 0.5px;">LALA HOTI LAL HALWAI & CAFE</h4>
             <p id="ticket-order-id" style="font-size: 0.8rem; color: #64748b;">Order #SB-8924 • Pick Up Counter</p>
+            <p id="ticket-customer-name" style="font-size: 0.9rem; font-weight: 800; color: var(--accent-gold); margin-top: 0.25rem;">👤 Customer: Guest</p>
           </div>
 
           <div id="ticket-items-list">

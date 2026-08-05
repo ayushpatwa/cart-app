@@ -1203,6 +1203,9 @@ function openCheckoutTicketModal(existingOrder = null) {
   if (!orderToDisplay) {
     if (state.cart.length === 0) return;
 
+    const customerNameInput = document.getElementById("customer-name-input");
+    const customerName = (customerNameInput && customerNameInput.value.trim()) ? customerNameInput.value.trim() : "Guest";
+
     let subtotal = 0;
     const orderItemsList = [];
 
@@ -1220,12 +1223,13 @@ function openCheckoutTicketModal(existingOrder = null) {
       }
     });
 
-    const tax = subtotal * 0.08;
+    const tax = subtotal * 0.05; // 5% GST
     const grandTotal = subtotal + tax;
     const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
 
     orderToDisplay = {
       id: orderId,
+      customerName: customerName,
       items: orderItemsList,
       subtotal: subtotal,
       tax: tax,
@@ -1250,7 +1254,7 @@ function openCheckoutTicketModal(existingOrder = null) {
   // Fetch latest live order status from state.orders (e.g., if admin set to Preparing or Ready)
   const liveOrder = (state.orders || []).find(o => o.id === orderToDisplay.id) || orderToDisplay;
 
-  // Render ticket items
+  // Render ticket items & Customer Name
   ticketBody.innerHTML = (liveOrder.items || []).map(i => `
     <div class="ticket-item-row">
       <span>${i.qty}x ${escapeHtml(i.name)}</span>
@@ -1259,6 +1263,11 @@ function openCheckoutTicketModal(existingOrder = null) {
   `).join("");
 
   ticketTotal.textContent = `₹${parseFloat(liveOrder.total).toFixed(0)}`;
+
+  const customerNameElem = document.getElementById("ticket-customer-name");
+  if (customerNameElem) {
+    customerNameElem.textContent = "👤 Customer: " + (liveOrder.customerName || "Guest");
+  }
 
   const currentUrl = window.location.origin + window.location.pathname;
   if (ticketQrImg) {
@@ -1499,7 +1508,7 @@ function renderOrdersList() {
       <div class="cart-item-card" style="flex-direction: column; align-items: stretch; gap: 0.75rem; border-left: 4px solid var(--primary); margin-bottom: 0.85rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <strong style="color: white; font-size: 1.05rem;">Order #${escapeHtml(order.id)}</strong>
+            <strong style="color: white; font-size: 1.05rem;">Order #${escapeHtml(order.id)} • 👤 ${escapeHtml(order.customerName || "Guest")}</strong>
             <span style="font-size: 0.775rem; color: var(--text-muted); margin-left: 0.5rem;">🕒 ${order.time}</span>
           </div>
 
