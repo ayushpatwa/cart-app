@@ -793,11 +793,9 @@ function renderCartDrawer() {
     `;
   }).join("");
 
-  const tax = subtotal * 0.05; // 5% GST/Tax
-  const total = subtotal + tax;
+  const total = subtotal;
 
   if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
-  if (taxElem) taxElem.textContent = `₹${tax.toFixed(0)}`;
   if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
 
@@ -1313,8 +1311,7 @@ function openCheckoutTicketModal(existingOrder = null) {
       });
     });
 
-    const tax = subtotal * 0.05; // 5% GST
-    const grandTotal = subtotal + tax;
+    const grandTotal = subtotal;
     const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
 
     orderToDisplay = {
@@ -1322,7 +1319,7 @@ function openCheckoutTicketModal(existingOrder = null) {
       customerName: customerName,
       items: orderItemsList,
       subtotal: subtotal,
-      tax: tax,
+      tax: 0,
       total: grandTotal,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       date: new Date().toLocaleDateString(),
