@@ -5,44 +5,59 @@
 // Active Primary Cloud API Endpoint
 const DEFAULT_CLOUD_API_URL = "https://jsonblob.com/api/jsonBlob/019fc2df-784d-779a-a563-9add0445d984";
 
-// Firebase Realtime Database Engine
-let firebaseApp = null;
-let firebaseDb = null;
+// Default Production Firebase Credentials for lala-halwai
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCrCzx8wBbUayGEIbzN2xfLqrxrpaEvFYQ",
+  authDomain: "lala-halwai.firebaseapp.com",
+  databaseURL: "https://lala-halwai-default-rtdb.firebaseio.com",
+  projectId: "lala-halwai",
+  storageBucket: "lala-halwai.firebasestorage.app",
+  messagingSenderId: "691713785616",
+  appId: "1:691713785616:web:7dbc9baa1019a8b698ef95",
+  measurementId: "G-X1LKQHNVKL"
+};
 
 function initFirebaseEngine() {
+  let config = DEFAULT_FIREBASE_CONFIG;
   const savedConfig = localStorage.getItem("FIREBASE_CONFIG_JSON");
-  if (savedConfig && typeof firebase !== "undefined") {
+  if (savedConfig) {
     try {
-      const config = JSON.parse(savedConfig);
-      if (config.databaseURL) {
-        if (!firebase.apps.length) {
-          firebaseApp = firebase.initializeApp(config);
-        } else {
-          firebaseApp = firebase.app();
-        }
-        firebaseDb = firebase.database();
-        console.log("🔥 Firebase Realtime Database connected successfully!");
-        
-        // Listen for live instant changes via WebSockets (Sub-50ms latency)
-        firebaseDb.ref("menu_app_state").on("value", (snapshot) => {
-          const cloudData = snapshot.val();
-          if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
-            state.cartName = cloudData.cartName || state.cartName;
-            state.tagline = cloudData.tagline || state.tagline;
-            state.adminPin = cloudData.adminPin || state.adminPin;
-            state.categories = cloudData.categories || state.categories;
-            state.items = cloudData.items;
-            state.orders = cloudData.orders || state.orders || [];
+      config = JSON.parse(savedConfig);
+    } catch (e) {}
+  }
 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(getAppStateData()));
-            updateCloudSyncStatus("synced");
-            renderApp();
-          }
-        });
-        return true;
+  if (typeof firebase !== "undefined" && config && config.databaseURL) {
+    try {
+      if (!firebase.apps.length) {
+        firebaseApp = firebase.initializeApp(config);
+      } else {
+        firebaseApp = firebase.app();
       }
+      firebaseDb = firebase.database();
+      console.log("🔥 Connected to Firebase Realtime Database: " + config.databaseURL);
+      
+      // Listen for live instant changes via WebSockets (Sub-50ms latency)
+      firebaseDb.ref("menu_app_state").on("value", (snapshot) => {
+        const cloudData = snapshot.val();
+        if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+          state.cartName = cloudData.cartName || state.cartName;
+          state.tagline = cloudData.tagline || state.tagline;
+          state.adminPin = cloudData.adminPin || state.adminPin;
+          state.categories = cloudData.categories || state.categories;
+          state.items = cloudData.items;
+          state.orders = cloudData.orders || state.orders || [];
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(getAppStateData()));
+          updateCloudSyncStatus("synced");
+          renderApp();
+        } else {
+          // First time initialization on brand new Firebase DB
+          saveState();
+        }
+      });
+      return true;
     } catch (e) {
-      console.warn("Failed to initialize custom Firebase config", e);
+      console.warn("Failed to initialize Firebase Engine", e);
     }
   }
   return false;
