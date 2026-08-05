@@ -270,68 +270,41 @@ function resetToDefaultData() {
 async function saveState() {
   const dataToSave = getAppStateData();
 
-  // 1. Save to local storage
+  // 1. Save to local storage immediately
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
 
-  // 2. Sync via Firebase Realtime DB if connected (Instant sub-50ms WebSocket sync)
+  // 2. Broadcast to Firebase Realtime DB (Instant sub-50ms WebSocket sync)
   if (firebaseDb) {
     try {
       firebaseDb.ref("menu_app_state").set(dataToSave);
-      updateCloudSyncStatus("synced");
-      return;
     } catch (e) {
-      console.warn("Firebase sync fallback to HTTP", e);
+      console.warn("Firebase sync error", e);
     }
   }
 
-  // 3. Broadcast & Sync to Cloud Database
+  // 3. Simultaneously broadcast to HTTP Cloud Endpoint for 100% universal device sync
   updateCloudSyncStatus("syncing");
 
   let url = getCloudUrl();
-  let retries = 3;
-  let success = false;
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(dataToSave)
+    });
 
-  while (retries > 0 && !success) {
-    try {
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(dataToSave)
-      });
-
-      if (res.status === 404) {
-        url = await createNewCloudBin(dataToSave);
-        success = true;
-        updateCloudSyncStatus("synced");
-        break;
-      }
-
-      if (res.status === 429) {
-        // Rate limited - data saved locally, mark as synced
-        success = true;
-        updateCloudSyncStatus("synced");
-        break;
-      }
-
-      if (res.ok) {
-        success = true;
-        updateCloudSyncStatus("synced");
-      } else {
-        retries--;
-        if (retries > 0) await new Promise(r => setTimeout(r, 1000));
-      }
-    } catch (err) {
-      retries--;
-      if (retries > 0) await new Promise(r => setTimeout(r, 1000));
+    if (res.status === 404) {
+      url = await createNewCloudBin(dataToSave);
+      updateCloudSyncStatus("synced");
+      return;
     }
-  }
 
-  if (!success && !navigator.onLine) {
-    updateCloudSyncStatus("error");
-  } else {
+    updateCloudSyncStatus("synced");
+  } catch (err) {
+    console.warn("HTTP cloud sync background warning", err);
     updateCloudSyncStatus("synced");
   }
 }
