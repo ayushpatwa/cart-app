@@ -487,9 +487,15 @@ function renderMenuItems() {
     const soldOutClass = isSoldOut ? "sold-out" : "";
     const adminCardClass = state.isAdmin ? "admin-card-edit" : "";
 
-    // Cart item quantity
-    const cartEntry = state.cart.find(c => String(c.itemId).trim() === String(item.id).trim());
-    const cartQty = cartEntry ? cartEntry.qty : 0;
+    const hasHalf = (item.halfPrice && parseFloat(item.halfPrice) > 0);
+    const halfPrice = hasHalf ? parseFloat(item.halfPrice) : null;
+    const fullPrice = parseFloat(item.price) || 0;
+
+    const halfCartEntry = state.cart.find(c => String(c.itemId).trim() === String(item.id).trim() && c.portion === 'half');
+    const fullCartEntry = state.cart.find(c => String(c.itemId).trim() === String(item.id).trim() && (c.portion || 'full') === 'full');
+    const halfQty = halfCartEntry ? halfCartEntry.qty : 0;
+    const fullQty = fullCartEntry ? fullCartEntry.qty : 0;
+    const totalQty = halfQty + fullQty;
 
     return `
       <div class="food-card ${soldOutClass} ${adminCardClass}" data-item-id="${item.id}">
@@ -514,7 +520,8 @@ function renderMenuItems() {
           <div class="card-header-line">
             <h4 class="food-title">${escapeHtml(item.name)}</h4>
             <div style="text-align: right;">
-              <span class="food-price">₹${item.price}</span>
+              ${hasHalf ? `<span class="food-price" style="font-size: 0.8rem; color: var(--accent-gold); font-weight: 700; margin-right: 0.3rem;">Half ₹${halfPrice}</span>` : ''}
+              <span class="food-price">₹${fullPrice}</span>
               ${(item.offerQty > 1 && item.offerPrice > 0) ? `
                 <div style="font-size: 0.7rem; color: var(--accent-gold); font-weight: 700; margin-top: 0.1rem;">
                   🏷️ Buy ${item.offerQty} @ ₹${item.offerPrice}
@@ -528,12 +535,27 @@ function renderMenuItems() {
           <div class="card-footer">
             <span class="calories-label">${item.calories ? `🔥 ${item.calories}` : ''}</span>
 
-            <button class="btn-add-cart" 
-                    data-item-id="${item.id}" 
-                    onclick="event.stopPropagation(); if (window.addToCart) window.addToCart('${item.id}');"
-                    ${isSoldOut ? 'disabled' : ''}>
-              ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add ₹${item.price}`}
-            </button>
+            ${hasHalf ? `
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn-add-cart" style="padding: 0.4rem 0.5rem; font-size: 0.78rem;"
+                        onclick="event.stopPropagation(); if (window.addToCart) window.addToCart('${item.id}', 'half');"
+                        ${isSoldOut ? 'disabled' : ''}>
+                  ${halfQty > 0 ? `Half (${halfQty})` : `+ Half ₹${halfPrice}`}
+                </button>
+                <button class="btn-add-cart" style="padding: 0.4rem 0.5rem; font-size: 0.78rem;"
+                        onclick="event.stopPropagation(); if (window.addToCart) window.addToCart('${item.id}', 'full');"
+                        ${isSoldOut ? 'disabled' : ''}>
+                  ${fullQty > 0 ? `Full (${fullQty})` : `+ Full ₹${fullPrice}`}
+                </button>
+              </div>
+            ` : `
+              <button class="btn-add-cart" 
+                      data-item-id="${item.id}" 
+                      onclick="event.stopPropagation(); if (window.addToCart) window.addToCart('${item.id}', 'full');"
+                      ${isSoldOut ? 'disabled' : ''}>
+                ${fullQty > 0 ? `In Cart (${fullQty})` : `+ Add ₹${fullPrice}`}
+              </button>
+            `}
           </div>
         </div>
 
@@ -619,9 +641,10 @@ function closeCartDrawerModal() {
 }
 window.closeCartDrawerModal = closeCartDrawerModal;
 
-function addToCart(itemId) {
+function addToCart(itemId, portion = 'full') {
   if (!itemId) return;
   const cleanId = String(itemId).trim();
+  const selectedPortion = (portion === 'half') ? 'half' : 'full';
 
   if (!state.cart || !Array.isArray(state.cart)) {
     state.cart = [];
@@ -643,11 +666,11 @@ function addToCart(itemId) {
 
   item.inStock = true;
 
-  const existingIndex = state.cart.findIndex(c => String(c.itemId).trim() === cleanId);
+  const existingIndex = state.cart.findIndex(c => String(c.itemId).trim() === cleanId && (c.portion || 'full') === selectedPortion);
   if (existingIndex !== -1) {
     state.cart[existingIndex].qty += 1;
   } else {
-    state.cart.push({ itemId: cleanId, qty: 1 });
+    state.cart.push({ itemId: cleanId, portion: selectedPortion, qty: 1 });
   }
 
   saveCartState();
@@ -655,13 +678,15 @@ function addToCart(itemId) {
   renderCartDrawer();
   renderCartBadge();
 
-  showToast(`Added "${item.name}" to your order bag! 🛍️`, "success");
+  const portionLabel = selectedPortion === 'half' ? 'Half' : 'Full';
+  showToast(`Added "${item.name} (${portionLabel})" to your order bag! 🛍️`, "success");
 }
 window.addToCart = addToCart;
 
-function updateCartQty(itemId, delta) {
+function updateCartQty(itemId, delta, portion = 'full') {
   const cleanId = String(itemId).trim();
-  const index = state.cart.findIndex(c => String(c.itemId).trim() === cleanId);
+  const selectedPortion = (portion === 'half') ? 'half' : 'full';
+  const index = state.cart.findIndex(c => String(c.itemId).trim() === cleanId && (c.portion || 'full') === selectedPortion);
   if (index === -1) return;
 
   state.cart[index].qty += delta;
@@ -760,18 +785,24 @@ function renderCartDrawer() {
       };
     }
 
+    const portion = c.portion || 'full';
+    const isHalf = (portion === 'half');
+    const unitPrice = (isHalf && item.halfPrice && parseFloat(item.halfPrice) > 0) ? parseFloat(item.halfPrice) : (parseFloat(item.price) || 30);
+
     // Combo offer calculation
     let lineTotal;
-    const hasOffer = (item.offerQty > 1 && item.offerPrice > 0 && c.qty >= item.offerQty);
+    const hasOffer = (!isHalf && item.offerQty > 1 && item.offerPrice > 0 && c.qty >= item.offerQty);
     if (hasOffer) {
       const combos = Math.floor(c.qty / item.offerQty);
       const remainder = c.qty % item.offerQty;
-      lineTotal = (combos * item.offerPrice) + (remainder * (item.price || 30));
+      lineTotal = (combos * item.offerPrice) + (remainder * unitPrice);
     } else {
-      lineTotal = (item.price || 30) * c.qty;
+      lineTotal = unitPrice * c.qty;
     }
     subtotal += lineTotal;
-    const savedAmount = hasOffer ? ((item.price || 30) * c.qty) - lineTotal : 0;
+    const savedAmount = hasOffer ? (unitPrice * c.qty) - lineTotal : 0;
+
+    const portionBadge = isHalf ? '<span style="background: var(--accent-gold); color: black; font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.35rem;">HALF</span>' : '';
 
     return `
       <div class="cart-item-card">
@@ -779,15 +810,15 @@ function renderCartDrawer() {
              onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80'" />
         
         <div class="cart-item-details">
-          <div class="cart-item-title">${escapeHtml(item.name)}</div>
-          <div class="cart-item-price">₹${lineTotal.toFixed(0)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${c.qty}x ₹${item.price})</span></div>
+          <div class="cart-item-title">${escapeHtml(item.name)}${portionBadge}</div>
+          <div class="cart-item-price">₹${lineTotal.toFixed(0)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${c.qty}x ₹${unitPrice})</span></div>
           ${hasOffer ? `<div style="font-size: 0.725rem; color: #34d399; font-weight: 700; margin-top: 0.15rem;">🎉 Combo Offer Applied! Saved ₹${savedAmount}</div>` : ''}
         </div>
 
         <div class="qty-controls">
-          <button type="button" class="qty-btn btn-minus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', -1);">-</button>
+          <button type="button" class="qty-btn btn-minus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', -1, '${portion}');">-</button>
           <span class="qty-val" style="color: white; font-weight: bold; padding: 0 0.35rem; font-size: 0.95rem;">${c.qty}</span>
-          <button type="button" class="qty-btn btn-plus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', 1);">+</button>
+          <button type="button" class="qty-btn btn-plus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', 1, '${portion}');">+</button>
         </div>
       </div>
     `;
@@ -833,6 +864,8 @@ function openEditItemModal(itemId = null) {
     document.getElementById("modal-item-name").value = item.name;
     catSelect.value = item.category;
     document.getElementById("modal-item-price").value = item.price;
+    const halfPriceInput = document.getElementById("modal-item-half-price");
+    if (halfPriceInput) halfPriceInput.value = item.halfPrice || "";
     document.getElementById("modal-item-image").value = item.image || "";
     document.getElementById("modal-item-calories").value = item.calories || "";
     document.getElementById("modal-item-tags").value = (item.tags || []).join(", ");
@@ -892,6 +925,10 @@ function saveItemFromModal() {
   const offerQty = (!isNaN(offerQtyVal) && offerQtyVal > 1) ? offerQtyVal : null;
   const offerPrice = (!isNaN(offerPriceVal) && offerPriceVal > 0) ? offerPriceVal : null;
 
+  const halfPriceElem = document.getElementById("modal-item-half-price");
+  const halfPriceVal = halfPriceElem ? parseFloat(halfPriceElem.value) : NaN;
+  const halfPrice = (!isNaN(halfPriceVal) && halfPriceVal > 0) ? halfPriceVal : null;
+
   if (!name || isNaN(price) || price < 0) {
     showToast("Please provide a valid dish name and price!", "error");
     return;
@@ -912,6 +949,7 @@ function saveItemFromModal() {
       item.name = name;
       item.category = category;
       item.price = price;
+      item.halfPrice = halfPrice;
       item.offerQty = offerQty;
       item.offerPrice = offerPrice;
       item.image = image || item.image;
@@ -929,6 +967,7 @@ function saveItemFromModal() {
       name,
       category,
       price,
+      halfPrice,
       offerQty,
       offerPrice,
       image: image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
@@ -1304,12 +1343,15 @@ function openCheckoutTicketModal(existingOrder = null) {
                    DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim()) ||
                    { id: c.itemId, name: "Special Street Dish", price: 30 };
 
-      const singlePrice = item.price || 30;
+      const portion = c.portion || 'full';
+      const isHalf = (portion === 'half');
+      const singlePrice = (isHalf && item.halfPrice && parseFloat(item.halfPrice) > 0) ? parseFloat(item.halfPrice) : (parseFloat(item.price) || 30);
       const lineTotal = singlePrice * c.qty;
       subtotal += lineTotal;
       orderItemsList.push({
         itemId: item.id,
-        name: item.name,
+        name: item.name + (isHalf ? " (Half)" : ""),
+        portion: portion,
         price: singlePrice,
         qty: c.qty,
         lineTotal: lineTotal

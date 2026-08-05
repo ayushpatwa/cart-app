@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#8B1E1E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="styles.css?v=20260805_v18">
+  <link rel="stylesheet" href="styles.css?v=20260805_v19_PORTION_SUPPORT">
   
   <script>
     // Force clear outdated browser caches & ServiceWorkers
@@ -226,8 +226,12 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="modal-item-price">Single Unit Price (₹) *</label>
-              <input type="number" step="1" id="modal-item-price" placeholder="e.g. 30" required />
+              <label for="modal-item-price">Full Price (₹) *</label>
+              <input type="number" step="1" id="modal-item-price" placeholder="e.g. 60" required />
+            </div>
+            <div class="form-group">
+              <label for="modal-item-half-price">Half Price (₹) <span style="font-size: 0.75rem; color: var(--text-muted);">(optional)</span></label>
+              <input type="number" step="1" id="modal-item-half-price" placeholder="e.g. 30" />
             </div>
           </div>
 
@@ -479,7 +483,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- SCRIPT FILES -->
-  <script src="data.js?v=20260805_v18"></script>
-  <script src="app.js?v=20260805_v18"></script>
+  <script src="data.js?v=20260805_v19_PORTION_SUPPORT"></script>
+  <script src="app.js?v=20260805_v19_PORTION_SUPPORT"></script>
 </body>
 </html>
