@@ -664,13 +664,35 @@ function updateCartQty(itemId, delta) {
 }
 
 function renderCartBadge() {
-  const badge = document.getElementById("cart-count-badge");
   const floatBtn = document.getElementById("floating-cart-btn");
   const totalItems = state.cart.reduce((sum, i) => sum + i.qty, 0);
 
-  if (badge) badge.textContent = totalItems;
+  let cartTotal = 0;
+  state.cart.forEach(c => {
+    const item = state.items.find(i => i.id === c.itemId);
+    if (item) cartTotal += item.price * c.qty;
+  });
+
   if (floatBtn) {
-    floatBtn.style.display = totalItems > 0 ? "flex" : "flex";
+    if (totalItems > 0) {
+      floatBtn.style.display = "flex";
+      floatBtn.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.55rem;">
+          <span style="background: rgba(255,255,255,0.25); border-radius: 99px; padding: 0.15rem 0.6rem; font-weight: 800; font-size: 0.85rem;">${totalItems}</span>
+          <span style="font-weight: 700;">🛍️ View Order Bag</span>
+        </div>
+        <span style="font-weight: 800; font-size: 1.05rem;">₹${cartTotal.toFixed(0)} ➔</span>
+      `;
+    } else {
+      floatBtn.style.display = "flex";
+      floatBtn.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.55rem;">
+          <span id="cart-count-badge" class="badge">0</span>
+          <span>🛍️ View Bag</span>
+        </div>
+        <span style="font-size: 0.85rem; opacity: 0.8;">Empty</span>
+      `;
+    }
   }
 }
 
