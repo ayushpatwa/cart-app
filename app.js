@@ -530,6 +530,7 @@ function renderMenuItems() {
 
             <button class="btn-add-cart" 
                     data-item-id="${item.id}" 
+                    onclick="event.stopPropagation(); if (window.addToCart) window.addToCart('${item.id}');"
                     ${isSoldOut ? 'disabled' : ''}>
               ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add ₹${item.price}`}
             </button>
@@ -634,6 +635,7 @@ function addToCart(itemId) {
 
   showToast(`Added "${item.name}" to your order bag! 🛍️`, "success");
 }
+window.addToCart = addToCart;
 
 function updateCartQty(itemId, delta) {
   const cleanId = String(itemId).trim();
