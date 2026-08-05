@@ -483,7 +483,7 @@ function renderMenuItems() {
   }
 
   container.innerHTML = filtered.map(item => {
-    const isSoldOut = !item.inStock;
+    const isSoldOut = (item.inStock === false);
     const soldOutClass = isSoldOut ? "sold-out" : "";
     const adminCardClass = state.isAdmin ? "admin-card-edit" : "";
 
@@ -676,34 +676,34 @@ window.updateCartQty = updateCartQty;
 
 function renderCartBadge() {
   const floatBtn = document.getElementById("floating-cart-btn");
-  const totalItems = state.cart.reduce((sum, i) => sum + i.qty, 0);
+  const totalItems = (state.cart || []).reduce((sum, i) => sum + (parseInt(i.qty) || 1), 0);
 
   let cartTotal = 0;
-  state.cart.forEach(c => {
-    const item = state.items.find(i => String(i.id).trim() === String(c.itemId).trim()) || 
+  (state.cart || []).forEach(c => {
+    const item = (state.items || []).find(i => String(i.id).trim() === String(c.itemId).trim()) || 
                  DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim()) ||
-                 { price: 30, offerQty: 0, offerPrice: 0 };
-    if (item) cartTotal += calculateLineItemTotal(item, c.qty);
+                 { price: 30 };
+    cartTotal += (parseFloat(item.price) || 30) * (parseInt(c.qty) || 1);
   });
 
   if (floatBtn) {
     if (totalItems > 0) {
       floatBtn.style.display = "flex";
       floatBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.55rem;">
-          <span style="background: rgba(255,255,255,0.25); border-radius: 99px; padding: 0.15rem 0.6rem; font-weight: 800; font-size: 0.85rem;">${totalItems}</span>
-          <span style="font-weight: 700;">🛍️ View Order Bag</span>
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="background: white; color: var(--primary); border-radius: 99px; padding: 0.2rem 0.65rem; font-weight: 900; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${totalItems}</span>
+          <span style="font-weight: 800;">🛍️ View Order Bag</span>
         </div>
-        <span style="font-weight: 800; font-size: 1.05rem;">₹${cartTotal.toFixed(0)} ➔</span>
+        <span style="font-weight: 900; font-size: 1.05rem; background: rgba(255,255,255,0.2); padding: 0.2rem 0.65rem; border-radius: 99px;">₹${cartTotal.toFixed(0)} ➔</span>
       `;
     } else {
       floatBtn.style.display = "flex";
       floatBtn.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.55rem;">
-          <span id="cart-count-badge" class="badge">0</span>
-          <span>🛍️ View Bag</span>
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span id="cart-count-badge" class="cart-count-badge" style="background: white; color: var(--primary); border-radius: 99px; padding: 0.2rem 0.65rem; font-weight: 900; font-size: 0.9rem;">0</span>
+          <span style="font-weight: 700;">🛍️ View Bag</span>
         </div>
-        <span style="font-size: 0.85rem; opacity: 0.8;">Empty</span>
+        <span style="font-size: 0.85rem; opacity: 0.85;">Empty</span>
       `;
     }
   }
