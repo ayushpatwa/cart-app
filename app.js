@@ -637,21 +637,32 @@ function saveCartState() {
 }
 
 function addToCart(itemId) {
+  if (!itemId) return;
   const cleanId = String(itemId).trim();
-  const item = state.items.find(i => String(i.id).trim() === cleanId);
+
+  // Find item by ID in active state or default menu
+  let item = state.items.find(i => String(i.id).trim() === cleanId);
+  if (!item) {
+    item = DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === cleanId);
+    if (item && !state.items.some(i => String(i.id).trim() === cleanId)) {
+      state.items.push(item);
+    }
+  }
+
   if (!item) {
     console.warn("Item not found in state.items:", itemId);
     showToast("Dish not found!", "error");
     return;
   }
-  if (!item.inStock) {
+  
+  if (item.inStock === false) {
     showToast("Sorry, this item is currently sold out!", "error");
     return;
   }
 
-  const existing = state.cart.find(c => String(c.itemId).trim() === cleanId);
-  if (existing) {
-    existing.qty += 1;
+  const existingIndex = state.cart.findIndex(c => String(c.itemId).trim() === cleanId);
+  if (existingIndex !== -1) {
+    state.cart[existingIndex].qty += 1;
   } else {
     state.cart.push({ itemId: cleanId, qty: 1 });
   }
@@ -671,7 +682,8 @@ function addToCart(itemId) {
 }
 
 function updateCartQty(itemId, delta) {
-  const index = state.cart.findIndex(c => String(c.itemId) === String(itemId));
+  const cleanId = String(itemId).trim();
+  const index = state.cart.findIndex(c => String(c.itemId).trim() === cleanId);
   if (index === -1) return;
 
   state.cart[index].qty += delta;
@@ -691,7 +703,8 @@ function renderCartBadge() {
 
   let cartTotal = 0;
   state.cart.forEach(c => {
-    const item = state.items.find(i => String(i.id) === String(c.itemId));
+    const item = state.items.find(i => String(i.id).trim() === String(c.itemId).trim()) || 
+                 DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim());
     if (item) cartTotal += calculateLineItemTotal(item, c.qty);
   });
 
@@ -727,10 +740,12 @@ function renderCartDrawer() {
 
   if (!bodyContainer) return;
 
-  // Clean up any cart entries whose item no longer exists
-  state.cart = state.cart.filter(c => state.items.some(i => String(i.id) === String(c.itemId)));
+  const validCartEntries = state.cart.filter(c => {
+    return state.items.some(i => String(i.id).trim() === String(c.itemId).trim()) ||
+           DEFAULT_MENU_DATA.items.some(i => String(i.id).trim() === String(c.itemId).trim());
+  });
 
-  if (state.cart.length === 0) {
+  if (validCartEntries.length === 0) {
     bodyContainer.innerHTML = `
       <div class="cart-empty-state">
         <span style="font-size: 3.5rem; display: block; margin-bottom: 0.5rem;">🛍️</span>
@@ -747,8 +762,9 @@ function renderCartDrawer() {
 
   let subtotal = 0;
 
-  bodyContainer.innerHTML = state.cart.map(c => {
-    const item = state.items.find(i => String(i.id) === String(c.itemId));
+  bodyContainer.innerHTML = validCartEntries.map(c => {
+    const item = state.items.find(i => String(i.id).trim() === String(c.itemId).trim()) ||
+                 DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim());
     if (!item) return "";
 
     const lineTotal = calculateLineItemTotal(item, c.qty);
