@@ -8,7 +8,16 @@
   <meta name="theme-color" content="#8B1E1E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260805_v5">
+  
+  <script>
+    // Force clear outdated browser caches & ServiceWorkers
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(r => r.unregister());
+      });
+    }
+  </script>
   
   <!-- Google Firebase Realtime Database SDK for Zero-Error 24/7 Production Sync -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -474,7 +483,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- SCRIPT FILES -->
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script src="data.js?v=20260805_v5"></script>
+  <script src="app.js?v=20260805_v5"></script>
 </body>
 </html>
