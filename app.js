@@ -592,7 +592,11 @@ function renderMenuItems() {
   container.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      addToCart(btn.dataset.itemId);
+      const targetBtn = e.target.closest(".btn-add-cart") || btn;
+      const itemId = targetBtn.getAttribute("data-item-id") || targetBtn.dataset.itemId;
+      if (itemId) {
+        addToCart(itemId);
+      }
     });
   });
 
@@ -632,7 +636,8 @@ function saveCartState() {
 }
 
 function addToCart(itemId) {
-  const item = state.items.find(i => String(i.id) === String(itemId));
+  const cleanId = String(itemId).trim();
+  const item = state.items.find(i => String(i.id).trim() === cleanId);
   if (!item) {
     console.warn("Item not found in state.items:", itemId);
     showToast("Dish not found!", "error");
@@ -643,17 +648,24 @@ function addToCart(itemId) {
     return;
   }
 
-  const existing = state.cart.find(c => String(c.itemId) === String(itemId));
+  const existing = state.cart.find(c => String(c.itemId).trim() === cleanId);
   if (existing) {
     existing.qty += 1;
   } else {
-    state.cart.push({ itemId: String(itemId), qty: 1 });
+    state.cart.push({ itemId: cleanId, qty: 1 });
   }
 
   saveCartState();
   renderMenuItems();
   renderCartDrawer();
   renderCartBadge();
+
+  // Auto-open Order Bag Drawer so customer immediately sees item in their cart bag
+  const drawerBackdrop = document.getElementById("cart-drawer-backdrop");
+  if (drawerBackdrop && !drawerBackdrop.classList.contains("open")) {
+    drawerBackdrop.classList.add("open");
+  }
+
   showToast(`Added "${item.name}" to your order bag! 🛍️`, "success");
 }
 
