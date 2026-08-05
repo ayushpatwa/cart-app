@@ -1248,124 +1248,109 @@ button:active, .cat-btn:active, .filter-chip:active, .btn-add-cart:active {
 }
 
 @media (max-width: 768px) {
-  /* Bottom Sheet Modals on Smartphones */
-  .modal-overlay {
-    align-items: flex-end;
-    padding: 0;
+  .app-header {
+    padding: 0.45rem 0.85rem;
   }
 
-  .modal-box {
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    max-height: 88vh;
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    transform: translateY(100%);
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  .cart-logo {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    border-radius: 50%;
   }
 
-  .modal-overlay.open .modal-box {
-    transform: translateY(0);
+  .brand-text h1 {
+    font-size: 0.95rem;
+    line-height: 1.1;
   }
 
-  .modal-header {
-    padding: 1rem 1.25rem;
-    position: relative;
+  .brand-text p {
+    display: none; /* Hide tagline on mobile for sleek thin header */
   }
 
-  /* Bottom sheet drag bar handle */
-  .modal-header::before {
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 99px;
+  .btn-admin {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
   }
 
-  /* Cart Drawer Bottom Sheet */
-  .cart-drawer {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 100%;
-    height: 85vh;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    transform: translateY(100%);
-    border-left: none;
-    border-top: 1px solid var(--border-color);
+  .hero-banner {
+    margin: 0.4rem auto 0;
+    padding: 0 0.85rem;
   }
 
-  .cart-drawer-backdrop.open .cart-drawer {
-    transform: translateY(0);
+  .banner-wrapper {
+    margin-bottom: 0.5rem;
+    max-height: 110px;
+    border-radius: var(--radius-md);
   }
 
-  /* Mobile Toast Placement (Top of Screen) */
-  .toast-container {
-    top: 1rem;
-    bottom: auto;
-    left: 1rem;
-    right: 1rem;
+  .hero-banner-img {
+    max-height: 110px;
+    aspect-ratio: 16 / 5;
+    object-fit: cover;
+    background: #181d28;
   }
 
-  .toast {
-    animation: slideInDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .hero-card {
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-md);
+    gap: 0.5rem;
   }
 
-  @keyframes slideInDown {
-    from { transform: translateY(-100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+  .hero-content h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .hero-content p {
+    display: none; /* Hide duplicate paragraph on mobile so food menu is visible above the fold */
+  }
+
+  .cart-meta-tags {
+    margin-top: 0.25rem;
+    gap: 0.3rem;
+  }
+
+  .meta-tag {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.68rem;
+  }
+
+  .controls-section {
+    margin: 0.5rem auto;
+    padding: 0 0.85rem;
+  }
+
+  .search-box {
+    padding: 0.45rem 0.75rem;
   }
 }
 
 @media (max-width: 640px) {
   /* Compact Smartphone Header */
   .app-header {
-    padding: 0.65rem 1rem;
+    padding: 0.4rem 0.75rem;
   }
 
   .cart-logo {
-    width: 38px;
-    height: 38px;
-    font-size: 1.2rem;
-    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
 
   .brand-text h1 {
-    font-size: 1.05rem;
-  }
-
-  .brand-text p {
-    font-size: 0.725rem;
+    font-size: 0.9rem;
   }
 
   .btn-admin {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-  }
-
-  .hero-card {
-    padding: 1.25rem;
-    border-radius: var(--radius-md);
-  }
-
-  .hero-content h2 {
-    font-size: 1.35rem;
-  }
-
-  .hero-content p {
-    font-size: 0.85rem;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.725rem;
   }
 
   /* 2-Column Mobile Grid Option for Food Items */
   .menu-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .food-card {
