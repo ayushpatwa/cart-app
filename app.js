@@ -515,6 +515,11 @@ function renderMenuItems() {
             <h4 class="food-title">${escapeHtml(item.name)}</h4>
             <div style="text-align: right;">
               <span class="food-price">₹${item.price}</span>
+              ${(item.offerQty > 1 && item.offerPrice > 0) ? `
+                <div style="font-size: 0.7rem; color: var(--accent-gold); font-weight: 700; margin-top: 0.1rem;">
+                  🏷️ Buy ${item.offerQty} @ ₹${item.offerPrice}
+                </div>
+              ` : ''}
             </div>
           </div>
 
@@ -683,7 +688,15 @@ function renderCartBadge() {
     const item = (state.items || []).find(i => String(i.id).trim() === String(c.itemId).trim()) || 
                  DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim()) ||
                  { price: 30 };
-    cartTotal += (parseFloat(item.price) || 30) * (parseInt(c.qty) || 1);
+    const qty = parseInt(c.qty) || 1;
+    const unitPrice = parseFloat(item.price) || 30;
+    if (item.offerQty > 1 && item.offerPrice > 0 && qty >= item.offerQty) {
+      const combos = Math.floor(qty / item.offerQty);
+      const remainder = qty % item.offerQty;
+      cartTotal += (combos * item.offerPrice) + (remainder * unitPrice);
+    } else {
+      cartTotal += unitPrice * qty;
+    }
   });
 
   if (floatBtn) {
@@ -750,8 +763,18 @@ function renderCartDrawer() {
       };
     }
 
-    const lineTotal = (item.price || 30) * c.qty;
+    // Combo offer calculation
+    let lineTotal;
+    const hasOffer = (item.offerQty > 1 && item.offerPrice > 0 && c.qty >= item.offerQty);
+    if (hasOffer) {
+      const combos = Math.floor(c.qty / item.offerQty);
+      const remainder = c.qty % item.offerQty;
+      lineTotal = (combos * item.offerPrice) + (remainder * (item.price || 30));
+    } else {
+      lineTotal = (item.price || 30) * c.qty;
+    }
     subtotal += lineTotal;
+    const savedAmount = hasOffer ? ((item.price || 30) * c.qty) - lineTotal : 0;
 
     return `
       <div class="cart-item-card">
@@ -761,6 +784,7 @@ function renderCartDrawer() {
         <div class="cart-item-details">
           <div class="cart-item-title">${escapeHtml(item.name)}</div>
           <div class="cart-item-price">₹${lineTotal.toFixed(0)} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${c.qty}x ₹${item.price})</span></div>
+          ${hasOffer ? `<div style="font-size: 0.725rem; color: #34d399; font-weight: 700; margin-top: 0.15rem;">🎉 Combo Offer Applied! Saved ₹${savedAmount}</div>` : ''}
         </div>
 
         <div class="qty-controls">
@@ -828,6 +852,11 @@ function openEditItemModal(itemId = null) {
     document.getElementById("modal-item-desc").value = item.description || "";
     document.getElementById("modal-item-instock").checked = item.inStock;
 
+    const offerQtyInput = document.getElementById("modal-item-offer-qty");
+    const offerPriceInput = document.getElementById("modal-item-offer-price");
+    if (offerQtyInput) offerQtyInput.value = item.offerQty || "";
+    if (offerPriceInput) offerPriceInput.value = item.offerPrice || "";
+
     // Set dietary checkboxes
     const dietary = item.dietary || [];
     document.getElementById("diet-vegan").checked = dietary.includes("vegan");
@@ -844,6 +873,11 @@ function openEditItemModal(itemId = null) {
     document.getElementById("modal-item-tags").value = "";
     document.getElementById("modal-item-desc").value = "";
     document.getElementById("modal-item-instock").checked = true;
+
+    const offerQtyInput = document.getElementById("modal-item-offer-qty");
+    const offerPriceInput = document.getElementById("modal-item-offer-price");
+    if (offerQtyInput) offerQtyInput.value = "";
+    if (offerPriceInput) offerPriceInput.value = "";
 
     document.getElementById("diet-vegan").checked = false;
     document.getElementById("diet-vegetarian").checked = false;
@@ -863,6 +897,13 @@ function saveItemFromModal() {
   const tagsRaw = document.getElementById("modal-item-tags").value.trim();
   const description = document.getElementById("modal-item-desc").value.trim();
   const inStock = document.getElementById("modal-item-instock").checked;
+
+  const offerQtyInput = document.getElementById("modal-item-offer-qty");
+  const offerPriceInput = document.getElementById("modal-item-offer-price");
+  const offerQtyVal = offerQtyInput ? parseInt(offerQtyInput.value) : NaN;
+  const offerPriceVal = offerPriceInput ? parseFloat(offerPriceInput.value) : NaN;
+  const offerQty = (!isNaN(offerQtyVal) && offerQtyVal > 1) ? offerQtyVal : null;
+  const offerPrice = (!isNaN(offerPriceVal) && offerPriceVal > 0) ? offerPriceVal : null;
 
   if (!name || isNaN(price) || price < 0) {
     showToast("Please provide a valid dish name and price!", "error");
@@ -884,6 +925,8 @@ function saveItemFromModal() {
       item.name = name;
       item.category = category;
       item.price = price;
+      item.offerQty = offerQty;
+      item.offerPrice = offerPrice;
       item.image = image || item.image;
       item.calories = calories;
       item.tags = tags;
@@ -899,6 +942,8 @@ function saveItemFromModal() {
       name,
       category,
       price,
+      offerQty,
+      offerPrice,
       image: image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
       description,
       inStock,
