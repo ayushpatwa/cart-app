@@ -39,13 +39,17 @@ function initFirebaseEngine() {
       // Listen for live instant changes via WebSockets (Sub-50ms latency)
       firebaseDb.ref("menu_app_state").on("value", (snapshot) => {
         const cloudData = snapshot.val();
-        if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+        if (cloudData) {
+          if (Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+            state.items = cloudData.items;
+          }
+          if (Array.isArray(cloudData.categories) && cloudData.categories.length > 0) {
+            state.categories = cloudData.categories;
+          }
           state.cartName = cloudData.cartName || state.cartName;
           state.tagline = cloudData.tagline || state.tagline;
           state.adminPin = cloudData.adminPin || state.adminPin;
-          state.categories = cloudData.categories || state.categories;
-          state.items = cloudData.items;
-          state.orders = cloudData.orders || state.orders || [];
+          state.orders = cloudData.orders || [];
 
           localStorage.setItem(STORAGE_KEY, JSON.stringify(getAppStateData()));
           updateCloudSyncStatus("synced");
@@ -135,10 +139,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initData();
   setupEventListeners();
 
-  // Auto-sync polling every 20 seconds for customers & admin live orders
+  // Auto-sync polling every 5 seconds for live orders & menu edits across devices
   setInterval(() => {
-    fetchCloudData(true);
-  }, 20000);
+    if (!firebaseDb) {
+      fetchCloudData(true);
+    }
+  }, 5000);
 });
 
 // Load state from LocalStorage first, then fetch live Cloud Database
@@ -159,8 +165,8 @@ function loadLocalData() {
       state.cartName = parsed.cartName || DEFAULT_MENU_DATA.cartName;
       state.tagline = parsed.tagline || DEFAULT_MENU_DATA.tagline;
       state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
-      state.categories = parsed.categories || DEFAULT_MENU_DATA.categories;
-      state.items = (parsed.items && parsed.items.length >= 50) ? parsed.items : DEFAULT_MENU_DATA.items;
+      state.categories = (parsed.categories && parsed.categories.length > 0) ? parsed.categories : DEFAULT_MENU_DATA.categories;
+      state.items = (parsed.items && parsed.items.length > 0) ? parsed.items : DEFAULT_MENU_DATA.items;
       state.orders = parsed.orders || [];
     } catch (e) {
       console.error("Failed to parse saved data, reverting to defaults", e);
@@ -213,20 +219,7 @@ async function fetchCloudData(silent = false) {
 
       if (res.ok) {
         const cloudData = await res.json();
-        if (cloudData && Array.isArray(cloudData.items)) {
-          // If cloud data is outdated (less than 40 items), upgrade it to PDF menu dataset
-          if (cloudData.items.length < 40 || cloudData.version !== "V2_PDF_REDESIGN") {
-            console.log("Cloud data was outdated. Force upgrading cloud database to PDF menu...");
-            state.cartName = DEFAULT_MENU_DATA.cartName;
-            state.tagline = DEFAULT_MENU_DATA.tagline;
-            state.categories = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.categories));
-            state.items = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA.items));
-            state.version = "V2_PDF_REDESIGN";
-            saveState();
-            renderApp();
-            return;
-          }
-
+        if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
           state.cartName = cloudData.cartName || state.cartName;
           state.tagline = cloudData.tagline || state.tagline;
           state.adminPin = cloudData.adminPin || state.adminPin;
