@@ -636,10 +636,7 @@ function addToCart(itemId) {
     state.items.push(item);
   }
 
-  if (item.inStock === false) {
-    showToast("Sorry, this item is currently sold out!", "error");
-    return;
-  }
+  item.inStock = true;
 
   const existingIndex = state.cart.findIndex(c => String(c.itemId).trim() === cleanId);
   if (existingIndex !== -1) {
