@@ -655,9 +655,6 @@ function addToCart(itemId) {
   renderCartDrawer();
   renderCartBadge();
 
-  // Force open Order Bag Drawer on screen
-  openCartDrawerModal();
-
   showToast(`Added "${item.name}" to your order bag! 🛍️`, "success");
 }
 window.addToCart = addToCart;
@@ -1077,18 +1074,6 @@ function setupEventListeners() {
       renderMenuItems();
     });
   }
-
-  // Global document click listener for fail-safe + Add button catching
-  document.addEventListener("click", function(e) {
-    const addBtn = e.target.closest(".btn-add-cart");
-    if (addBtn) {
-      e.stopPropagation();
-      const itemId = addBtn.getAttribute("data-item-id") || addBtn.dataset.itemId;
-      if (itemId && window.addToCart) {
-        window.addToCart(itemId);
-      }
-    }
-  });
 
   // Cart Drawer open/close
   const floatBtn = document.getElementById("floating-cart-btn");
