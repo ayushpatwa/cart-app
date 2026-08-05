@@ -563,7 +563,6 @@ function renderMenuItems() {
 
             <button class="btn-add-cart" 
                     data-item-id="${item.id}" 
-                    onclick="event.stopPropagation(); addToCart('${item.id}');"
                     ${isSoldOut ? 'disabled' : ''}>
               ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add ₹${item.price}`}
             </button>
@@ -588,18 +587,6 @@ function renderMenuItems() {
       </div>
     `;
   }).join("");
-
-  // Attach event handlers to card elements
-  container.querySelectorAll(".btn-add-cart").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const targetBtn = e.target.closest(".btn-add-cart") || btn;
-      const itemId = targetBtn.getAttribute("data-item-id") || targetBtn.dataset.itemId;
-      if (itemId) {
-        addToCart(itemId);
-      }
-    });
-  });
 
   if (state.isAdmin) {
     // Stock toggle buttons
@@ -1037,6 +1024,22 @@ function addCategoryFromModal() {
    ========================================================================== */
 
 function setupEventListeners() {
+  // Parent Event Delegation on Menu Grid for + Add Buttons (Prevents double clicks)
+  const menuGrid = document.getElementById("menu-grid");
+  if (menuGrid) {
+    menuGrid.addEventListener("click", (e) => {
+      const addBtn = e.target.closest(".btn-add-cart");
+      if (addBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const itemId = addBtn.getAttribute("data-item-id") || addBtn.dataset.itemId;
+        if (itemId) {
+          addToCart(itemId);
+        }
+      }
+    });
+  }
+
   // Admin Mode Toggle Button
   document.getElementById("btn-admin-toggle").addEventListener("click", () => {
     if (state.isAdmin) {
