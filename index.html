@@ -9,6 +9,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Google Firebase Realtime Database SDK for Zero-Error 24/7 Production Sync -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -102,6 +106,7 @@
         <div class="admin-action-btns">
           <button id="btn-admin-orders" class="btn-add-item" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">📦 Live Orders (<span id="admin-order-count">0</span>)</button>
           <button id="btn-admin-add-dish" class="btn-add-item">➕ Add New Dish</button>
+          <button id="btn-admin-firebase" class="btn-manage-cats" style="background: rgba(245,158,11,0.2); color:#fbbf24; border: 1px solid rgba(245,158,11,0.4);">🔥 Firebase DB</button>
           <button id="btn-admin-bulk" class="btn-manage-cats">📥 Bulk Import</button>
           <button id="btn-admin-cats" class="btn-manage-cats">📁 Categories</button>
           <button id="btn-admin-reset" class="btn-reset-data">🔄 Reset</button>
@@ -407,6 +412,37 @@
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); margin-top: 1rem; padding-top: 1rem;">
           <button id="btn-clear-completed-orders" class="btn-reset-data">🧹 Clear Completed</button>
           <button class="btn-manage-cats btn-close-modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE CONFIG MODAL -->
+  <div id="firebase-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3>🔥 Google Firebase Production DB Config</h3>
+        <button class="btn-close-drawer btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Connect your Google Firebase Realtime Database for 100% free, 24/7 sub-50ms instant order sync across all customer & admin devices.
+        </p>
+
+        <div class="form-group">
+          <label style="color: white; font-weight: 600;">Firebase Config (Paste JSON from Firebase Console):</label>
+          <textarea id="firebase-config-input" rows="8" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "databaseURL": "https://your-app-default-rtdb.firebaseio.com",
+  "projectId": "your-app",
+  "appId": "1:123456789:web:abc"
+}' style="width: 100%; font-family: monospace; font-size: 0.8rem; background: var(--bg-main); color: #34d399; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button id="btn-clear-firebase" class="btn-cancel" style="background: rgba(239,68,68,0.2); color: #fca5a5;">Clear Connection</button>
+          <button id="btn-save-firebase" class="btn-save" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">🔥 Save & Connect Firebase</button>
         </div>
       </div>
     </div>

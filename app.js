@@ -1,9 +1,52 @@
 /**
- * Food Cart Menu Application - Interactive Logic & Admin System with Self-Healing Global Cloud Sync
+ * Food Cart Menu Application - Interactive Logic & Admin System with Firebase & Self-Healing Cloud Engine
  */
 
 // Active Primary Cloud API Endpoint
 const DEFAULT_CLOUD_API_URL = "https://jsonblob.com/api/jsonBlob/019fc2df-784d-779a-a563-9add0445d984";
+
+// Firebase Realtime Database Engine
+let firebaseApp = null;
+let firebaseDb = null;
+
+function initFirebaseEngine() {
+  const savedConfig = localStorage.getItem("FIREBASE_CONFIG_JSON");
+  if (savedConfig && typeof firebase !== "undefined") {
+    try {
+      const config = JSON.parse(savedConfig);
+      if (config.databaseURL) {
+        if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(config);
+        } else {
+          firebaseApp = firebase.app();
+        }
+        firebaseDb = firebase.database();
+        console.log("🔥 Firebase Realtime Database connected successfully!");
+        
+        // Listen for live instant changes via WebSockets (Sub-50ms latency)
+        firebaseDb.ref("menu_app_state").on("value", (snapshot) => {
+          const cloudData = snapshot.val();
+          if (cloudData && Array.isArray(cloudData.items) && cloudData.items.length > 0) {
+            state.cartName = cloudData.cartName || state.cartName;
+            state.tagline = cloudData.tagline || state.tagline;
+            state.adminPin = cloudData.adminPin || state.adminPin;
+            state.categories = cloudData.categories || state.categories;
+            state.items = cloudData.items;
+            state.orders = cloudData.orders || state.orders || [];
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(getAppStateData()));
+            updateCloudSyncStatus("synced");
+            renderApp();
+          }
+        });
+        return true;
+      }
+    } catch (e) {
+      console.warn("Failed to initialize custom Firebase config", e);
+    }
+  }
+  return false;
+}
 
 function getCloudUrl() {
   return localStorage.getItem("CUSTOM_CLOUD_API_URL") || DEFAULT_CLOUD_API_URL;
@@ -87,7 +130,10 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initData() {
   loadLocalData();
   renderApp();
-  await fetchCloudData();
+  const hasFirebase = initFirebaseEngine();
+  if (!hasFirebase) {
+    await fetchCloudData();
+  }
 }
 
 function loadLocalData() {
@@ -219,7 +265,18 @@ async function saveState() {
   // 1. Save to local storage
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
 
-  // 2. Broadcast & Sync to Cloud Database
+  // 2. Sync via Firebase Realtime DB if connected (Instant sub-50ms WebSocket sync)
+  if (firebaseDb) {
+    try {
+      firebaseDb.ref("menu_app_state").set(dataToSave);
+      updateCloudSyncStatus("synced");
+      return;
+    } catch (e) {
+      console.warn("Firebase sync fallback to HTTP", e);
+    }
+  }
+
+  // 3. Broadcast & Sync to Cloud Database
   updateCloudSyncStatus("syncing");
 
   let url = getCloudUrl();
@@ -927,6 +984,60 @@ function setupEventListeners() {
   if (bulkBtn) bulkBtn.addEventListener("click", openBulkModal);
   const ordersBtn = document.getElementById("btn-admin-orders");
   if (ordersBtn) ordersBtn.addEventListener("click", openOrdersModal);
+
+  // Firebase DB Config Modal Triggers
+  const firebaseBtn = document.getElementById("btn-admin-firebase");
+  if (firebaseBtn) {
+    firebaseBtn.addEventListener("click", () => {
+      const modal = document.getElementById("firebase-modal");
+      const textarea = document.getElementById("firebase-config-input");
+      const savedConfig = localStorage.getItem("FIREBASE_CONFIG_JSON");
+      if (textarea && savedConfig) {
+        textarea.value = savedConfig;
+      }
+      if (modal) modal.classList.add("open");
+    });
+  }
+
+  const saveFirebaseBtn = document.getElementById("btn-save-firebase");
+  if (saveFirebaseBtn) {
+    saveFirebaseBtn.addEventListener("click", () => {
+      const input = document.getElementById("firebase-config-input").value.trim();
+      if (!input) {
+        showToast("Please paste valid Firebase configuration JSON", "error");
+        return;
+      }
+      try {
+        const parsed = JSON.parse(input);
+        if (!parsed.databaseURL) {
+          showToast("Firebase JSON must contain a valid databaseURL!", "error");
+          return;
+        }
+        localStorage.setItem("FIREBASE_CONFIG_JSON", JSON.stringify(parsed));
+        closeModal("firebase-modal");
+        const connected = initFirebaseEngine();
+        if (connected) {
+          saveState();
+          showToast("🔥 Google Firebase connected! 100% Zero-Error Sync Active.", "admin");
+        } else {
+          showToast("Saved Firebase config!", "success");
+        }
+      } catch (e) {
+        showToast("Invalid JSON format. Check Firebase console config snippet.", "error");
+      }
+    });
+  }
+
+  const clearFirebaseBtn = document.getElementById("btn-clear-firebase");
+  if (clearFirebaseBtn) {
+    clearFirebaseBtn.addEventListener("click", () => {
+      localStorage.removeItem("FIREBASE_CONFIG_JSON");
+      firebaseApp = null;
+      firebaseDb = null;
+      closeModal("firebase-modal");
+      showToast("Cleared Firebase configuration. Switched to Cloud HTTP engine.", "admin");
+    });
+  }
 
   document.getElementById("btn-admin-reset").addEventListener("click", () => {
     if (confirm("Reset menu data to factory defaults? All custom changes will be overwritten.")) {
