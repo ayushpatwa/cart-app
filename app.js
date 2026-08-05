@@ -750,7 +750,7 @@ function renderCartDrawer() {
       };
     }
 
-    const lineTotal = item.price * c.qty;
+    const lineTotal = (item.price || 30) * c.qty;
     subtotal += lineTotal;
 
     return `
@@ -764,9 +764,9 @@ function renderCartDrawer() {
         </div>
 
         <div class="qty-controls">
-          <button class="qty-btn btn-minus" data-item-id="${item.id}">-</button>
-          <span class="qty-val">${c.qty}</span>
-          <button class="qty-btn btn-plus" data-item-id="${item.id}">+</button>
+          <button type="button" class="qty-btn btn-minus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', -1);">-</button>
+          <span class="qty-val" style="color: white; font-weight: bold; padding: 0 0.35rem; font-size: 0.95rem;">${c.qty}</span>
+          <button type="button" class="qty-btn btn-plus" data-item-id="${item.id}" onclick="event.stopPropagation(); window.updateCartQty('${item.id}', 1);">+</button>
         </div>
       </div>
     `;
