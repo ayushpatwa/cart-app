@@ -801,7 +801,6 @@ input, select, textarea {
   font-weight: 800;
 }
 
-/* Slide-over Cart Drawer */
 .cart-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -814,8 +813,9 @@ input, select, textarea {
 }
 
 .cart-drawer-backdrop.open {
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: block !important;
 }
 
 .cart-drawer {

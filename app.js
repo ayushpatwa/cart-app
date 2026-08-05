@@ -628,6 +628,7 @@ function addToCart(itemId) {
   // Auto-open Order Bag Drawer so customer immediately sees item in their cart bag
   const drawerBackdrop = document.getElementById("cart-drawer-backdrop");
   if (drawerBackdrop) {
+    drawerBackdrop.style.display = "block";
     drawerBackdrop.classList.add("open");
   }
 
@@ -1035,16 +1036,26 @@ function setupEventListeners() {
 
   // Cart Drawer open/close
   document.getElementById("floating-cart-btn").addEventListener("click", () => {
-    document.getElementById("cart-drawer-backdrop").classList.add("open");
+    const backdrop = document.getElementById("cart-drawer-backdrop");
+    if (backdrop) {
+      backdrop.style.display = "block";
+      backdrop.classList.add("open");
+    }
   });
 
   document.getElementById("btn-close-cart").addEventListener("click", () => {
-    document.getElementById("cart-drawer-backdrop").classList.remove("open");
+    const backdrop = document.getElementById("cart-drawer-backdrop");
+    if (backdrop) {
+      backdrop.classList.remove("open");
+      backdrop.style.display = "none";
+    }
   });
 
   document.getElementById("cart-drawer-backdrop").addEventListener("click", (e) => {
     if (e.target.id === "cart-drawer-backdrop") {
-      document.getElementById("cart-drawer-backdrop").classList.remove("open");
+      const backdrop = document.getElementById("cart-drawer-backdrop");
+      backdrop.classList.remove("open");
+      backdrop.style.display = "none";
     }
   });
 
