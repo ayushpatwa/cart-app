@@ -131,7 +131,7 @@ let state = {
 };
 
 // LocalStorage Keys
-const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V3";
+const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V4_IMAGE_SYNC";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready
@@ -166,7 +166,24 @@ function loadLocalData() {
       state.tagline = parsed.tagline || DEFAULT_MENU_DATA.tagline;
       state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
       state.categories = (parsed.categories && parsed.categories.length > 0) ? parsed.categories : DEFAULT_MENU_DATA.categories;
-      state.items = (parsed.items && parsed.items.length > 0) ? parsed.items : DEFAULT_MENU_DATA.items;
+      
+      if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+        // Smart Merge: Merge saved custom edits while keeping fresh image URLs from data.js
+        state.items = parsed.items.map(savedItem => {
+          const defaultMatch = DEFAULT_MENU_DATA.items.find(d => String(d.id).trim() === String(savedItem.id).trim());
+          if (defaultMatch) {
+            return {
+              ...defaultMatch,
+              ...savedItem,
+              image: savedItem.image || defaultMatch.image
+            };
+          }
+          return savedItem;
+        });
+      } else {
+        state.items = DEFAULT_MENU_DATA.items;
+      }
+      
       state.orders = parsed.orders || [];
     } catch (e) {
       console.error("Failed to parse saved data, reverting to defaults", e);
