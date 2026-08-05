@@ -521,7 +521,7 @@ function renderMenuItems() {
     const adminCardClass = state.isAdmin ? "admin-card-edit" : "";
 
     // Cart item quantity
-    const cartEntry = state.cart.find(c => c.itemId === item.id);
+    const cartEntry = state.cart.find(c => String(c.itemId).trim() === String(item.id).trim());
     const cartQty = cartEntry ? cartEntry.qty : 0;
 
     return `
@@ -563,6 +563,7 @@ function renderMenuItems() {
 
             <button class="btn-add-cart" 
                     data-item-id="${item.id}" 
+                    onclick="event.stopPropagation(); addToCart('${item.id}');"
                     ${isSoldOut ? 'disabled' : ''}>
               ${cartQty > 0 ? `In Cart (${cartQty})` : `+ Add ₹${item.price}`}
             </button>
