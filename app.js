@@ -1348,6 +1348,13 @@ function openPinModal() {
   const modal = document.getElementById("pin-modal");
   const inputs = modal.querySelectorAll(".pin-digit");
   inputs.forEach(input => input.value = "");
+
+  // Runtime fail-safe: forcibly overwrite pin-hint element text on DOM
+  const pinHint = modal.querySelector(".pin-hint");
+  if (pinHint) {
+    pinHint.innerHTML = "🔒 Authorized Admin Access Only";
+  }
+
   modal.classList.add("open");
   inputs[0].focus();
 
