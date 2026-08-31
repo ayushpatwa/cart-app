@@ -100,6 +100,7 @@ function initFirebaseEngine() {
           state.cartName = cloudData.cartName || state.cartName;
           state.tagline = cloudData.tagline || state.tagline;
           state.adminPin = cloudData.adminPin || state.adminPin;
+          state.discountOffer = cloudData.discountOffer || state.discountOffer;
           
           if (Array.isArray(cloudData.orders)) {
             processIncomingOrders(cloudData.orders);
@@ -160,6 +161,7 @@ function getAppStateData() {
     categories: state.categories,
     items: state.items,
     orders: state.orders || [],
+    discountOffer: state.discountOffer || { enabled: true, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" },
     updatedAt: new Date().toISOString()
   };
 }
@@ -174,6 +176,12 @@ let state = {
   categories: [],
   items: [],
   orders: [], // Live Customer Orders Array { id, items, total, status, time }
+  discountOffer: {
+    enabled: true,
+    type: "percent",
+    value: 10,
+    bannerText: "🎉 10% OFF ON ALL ORDERS"
+  },
   
   // UI State
   isAdmin: false,
@@ -184,6 +192,31 @@ let state = {
   editingItemId: null,
   activeOrdersFilter: "all"
 };
+
+function calculateCartDiscount(subtotal) {
+  if (!state.discountOffer || !state.discountOffer.enabled || subtotal <= 0) {
+    return { discount: 0, bannerText: "", label: "Discount" };
+  }
+  const offer = state.discountOffer;
+  let discount = 0;
+  let label = "";
+
+  if (offer.type === "percent") {
+    const pct = parseFloat(offer.value) || 0;
+    discount = Math.round(subtotal * (pct / 100));
+    label = `🎉 Special Discount (${pct}% OFF)`;
+  } else if (offer.type === "flat") {
+    const flatAmt = parseFloat(offer.value) || 0;
+    discount = Math.min(subtotal, flatAmt);
+    label = `🎉 Flat Discount (-₹${flatAmt})`;
+  }
+
+  return {
+    discount: Math.max(0, discount),
+    bannerText: offer.bannerText || `🎉 ${offer.value}% OFF ON ALL ORDERS`,
+    label: label || "🎉 Special Discount"
+  };
+}
 
 // LocalStorage Keys
 const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V4_IMAGE_SYNC";
@@ -240,6 +273,7 @@ function loadLocalData() {
       }
       
       state.orders = parsed.orders || [];
+      state.discountOffer = parsed.discountOffer || state.discountOffer;
     } catch (e) {
       console.error("Failed to parse saved data, reverting to defaults", e);
       resetToDefaultData();
@@ -291,6 +325,7 @@ async function fetchCloudData(silent = false) {
           state.adminPin = cloudData.adminPin || state.adminPin;
           state.categories = cloudData.categories || state.categories;
           state.items = cloudData.items;
+          state.discountOffer = cloudData.discountOffer || state.discountOffer;
           if (Array.isArray(cloudData.orders)) {
             processIncomingOrders(cloudData.orders);
             state.orders = cloudData.orders;
@@ -410,12 +445,26 @@ function saveCartState() {
 
 function renderApp() {
   renderAdminHeaderState();
+  renderHeroOfferBanner();
   renderCategoryBar();
   renderDietaryFilters();
   renderMenuItems();
   renderCartDrawer();
   renderCartBadge();
   renderCustomerActiveTicketPill();
+}
+
+function renderHeroOfferBanner() {
+  const tagElem = document.getElementById("hero-promo-tag");
+  if (!tagElem) return;
+
+  const offer = state.discountOffer;
+  if (offer && offer.enabled && offer.bannerText) {
+    tagElem.style.display = "inline-block";
+    tagElem.textContent = offer.bannerText;
+  } else {
+    tagElem.style.display = "none";
+  }
 }
 
 function renderAdminHeaderState() {
@@ -796,9 +845,9 @@ function renderCartBadge() {
     }
   });
 
-  // Calculate 10% Special Discount
-  const discount = Math.round(subtotal * 0.10);
-  const cartTotal = Math.max(0, subtotal - discount);
+  // Calculate Dynamic Special Discount
+  const calc = calculateCartDiscount(subtotal);
+  const cartTotal = Math.max(0, subtotal - calc.discount);
 
   if (floatBtn) {
     if (totalItems > 0) {
@@ -903,12 +952,14 @@ function renderCartDrawer() {
     `;
   }).join("");
 
-  const discount = Math.round(subtotal * 0.10);
-  const total = Math.max(0, subtotal - discount);
+  const calc = calculateCartDiscount(subtotal);
+  const total = Math.max(0, subtotal - calc.discount);
   const discountElem = document.getElementById("cart-discount");
+  const discountLabelElem = document.getElementById("cart-discount-label");
 
   if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
-  if (discountElem) discountElem.textContent = `-₹${discount.toFixed(0)}`;
+  if (discountLabelElem) discountLabelElem.textContent = calc.label || "Special Discount";
+  if (discountElem) discountElem.textContent = `-₹${calc.discount.toFixed(0)}`;
   if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
 }
@@ -1326,6 +1377,11 @@ function setupEventListeners() {
     qrBtn.addEventListener("click", openQrModal);
   }
 
+  const offersBtn = document.getElementById("btn-admin-offers");
+  if (offersBtn) {
+    offersBtn.addEventListener("click", openAdminOfferModal);
+  }
+
   const activeTicketBtn = document.getElementById("btn-view-active-ticket");
   if (activeTicketBtn) {
     activeTicketBtn.addEventListener("click", () => {
@@ -1338,6 +1394,53 @@ function setupEventListeners() {
       }
     });
   }
+}
+
+/* ==========================================================================
+   Admin Discount Offer Manager Functions
+   ========================================================================== */
+
+function openAdminOfferModal() {
+  const modal = document.getElementById("offer-modal");
+  if (!modal) return;
+  const offer = state.discountOffer || { enabled: true, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" };
+
+  const enableChk = document.getElementById("modal-offer-enable");
+  const typeSel = document.getElementById("modal-offer-type");
+  const valInp = document.getElementById("modal-offer-value");
+  const bannerInp = document.getElementById("modal-offer-banner");
+
+  if (enableChk) enableChk.checked = !!offer.enabled;
+  if (typeSel) typeSel.value = offer.type || "percent";
+  if (valInp) valInp.value = offer.value !== undefined ? offer.value : 10;
+  if (bannerInp) bannerInp.value = offer.bannerText || "🎉 10% OFF ON ALL ORDERS";
+
+  modal.classList.add("open");
+}
+
+function saveAdminOfferFromModal() {
+  const enableChk = document.getElementById("modal-offer-enable");
+  const typeSel = document.getElementById("modal-offer-type");
+  const valInp = document.getElementById("modal-offer-value");
+  const bannerInp = document.getElementById("modal-offer-banner");
+
+  const enabled = enableChk ? enableChk.checked : true;
+  const type = typeSel ? typeSel.value : "percent";
+  const value = valInp ? (parseFloat(valInp.value) || 0) : 10;
+  let defaultBanner = (type === "percent") ? `🎉 ${value}% OFF ON ALL ORDERS` : `🎉 ₹${value} FLAT DISCOUNT ON ALL ORDERS`;
+  const bannerText = bannerInp ? (bannerInp.value.trim() || defaultBanner) : defaultBanner;
+
+  state.discountOffer = {
+    enabled,
+    type,
+    value,
+    bannerText
+  };
+
+  saveState();
+  renderApp();
+  closeModal("offer-modal");
+  showToast(`Live discount offer updated successfully! 🏷️`, "admin");
 }
 
 /* ==========================================================================
@@ -1447,8 +1550,8 @@ function openCheckoutTicketModal(existingOrder = null) {
       });
     });
 
-    const discount = Math.round(subtotal * 0.10);
-    const grandTotal = Math.max(0, subtotal - discount);
+    const calc = calculateCartDiscount(subtotal);
+    const grandTotal = Math.max(0, subtotal - calc.discount);
     const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
 
     orderToDisplay = {
@@ -1456,7 +1559,8 @@ function openCheckoutTicketModal(existingOrder = null) {
       customerName: customerName,
       items: orderItemsList,
       subtotal: subtotal,
-      discount: discount,
+      discount: calc.discount,
+      discountLabel: calc.label,
       tax: 0,
       total: grandTotal,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1495,7 +1599,7 @@ function openCheckoutTicketModal(existingOrder = null) {
   if (liveOrder.discount && liveOrder.discount > 0) {
     itemsHtml += `
       <div class="ticket-item-row" style="color: #10b981; font-weight: 700; border-top: 1px dashed #cbd5e1; padding-top: 0.35rem; margin-top: 0.35rem;">
-        <span>🎉 Special Discount (10% OFF)</span>
+        <span>${escapeHtml(liveOrder.discountLabel || "🎉 Special Discount")}</span>
         <span>-₹${parseFloat(liveOrder.discount).toFixed(0)}</span>
       </div>
     `;
