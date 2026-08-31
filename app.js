@@ -17,6 +17,57 @@ const DEFAULT_FIREBASE_CONFIG = {
   measurementId: "G-X1LKQHNVKL"
 };
 
+let knownOrderIds = new Set();
+
+function playOrderNotificationSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const playNote = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    const now = ctx.currentTime;
+    playNote(523.25, now, 0.25);       // C5
+    playNote(783.99, now + 0.15, 0.4); // G5
+  } catch (e) {
+    console.log("Audio notification error", e);
+  }
+}
+
+function processIncomingOrders(ordersList) {
+  if (!Array.isArray(ordersList)) return;
+  const isInitialLoad = (knownOrderIds.size === 0);
+  const newOrders = [];
+
+  ordersList.forEach(ord => {
+    if (ord && ord.id) {
+      if (!knownOrderIds.has(ord.id)) {
+        if (!isInitialLoad) {
+          newOrders.push(ord);
+        }
+        knownOrderIds.add(ord.id);
+      }
+    }
+  });
+
+  if (newOrders.length > 0) {
+    newOrders.forEach(newOrd => {
+      playOrderNotificationSound();
+      showToast(`🔔 NEW ORDER RECEIVED! #${escapeHtml(newOrd.id)} by ${escapeHtml(newOrd.customerName || 'Customer')} (₹${newOrd.total})`, "admin");
+    });
+  }
+}
+
 function initFirebaseEngine() {
   let config = DEFAULT_FIREBASE_CONFIG;
   const savedConfig = localStorage.getItem("FIREBASE_CONFIG_JSON");
@@ -49,7 +100,11 @@ function initFirebaseEngine() {
           state.cartName = cloudData.cartName || state.cartName;
           state.tagline = cloudData.tagline || state.tagline;
           state.adminPin = cloudData.adminPin || state.adminPin;
-          state.orders = cloudData.orders || [];
+          
+          if (Array.isArray(cloudData.orders)) {
+            processIncomingOrders(cloudData.orders);
+            state.orders = cloudData.orders;
+          }
 
           localStorage.setItem(STORAGE_KEY, JSON.stringify(getAppStateData()));
           updateCloudSyncStatus("synced");
@@ -236,7 +291,10 @@ async function fetchCloudData(silent = false) {
           state.adminPin = cloudData.adminPin || state.adminPin;
           state.categories = cloudData.categories || state.categories;
           state.items = cloudData.items;
-          state.orders = cloudData.orders || state.orders || [];
+          if (Array.isArray(cloudData.orders)) {
+            processIncomingOrders(cloudData.orders);
+            state.orders = cloudData.orders;
+          }
 
           // Save local cache
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -722,7 +780,7 @@ function renderCartBadge() {
   const floatBtn = document.getElementById("floating-cart-btn");
   const totalItems = (state.cart || []).reduce((sum, i) => sum + (parseInt(i.qty) || 1), 0);
 
-  let cartTotal = 0;
+  let subtotal = 0;
   (state.cart || []).forEach(c => {
     const item = (state.items || []).find(i => String(i.id).trim() === String(c.itemId).trim()) || 
                  DEFAULT_MENU_DATA.items.find(i => String(i.id).trim() === String(c.itemId).trim()) ||
@@ -732,11 +790,15 @@ function renderCartBadge() {
     if (item.offerQty > 1 && item.offerPrice > 0 && qty >= item.offerQty) {
       const combos = Math.floor(qty / item.offerQty);
       const remainder = qty % item.offerQty;
-      cartTotal += (combos * item.offerPrice) + (remainder * unitPrice);
+      subtotal += (combos * item.offerPrice) + (remainder * unitPrice);
     } else {
-      cartTotal += unitPrice * qty;
+      subtotal += unitPrice * qty;
     }
   });
+
+  // Calculate 10% Special Discount
+  const discount = Math.round(subtotal * 0.10);
+  const cartTotal = Math.max(0, subtotal - discount);
 
   if (floatBtn) {
     if (totalItems > 0) {
@@ -841,9 +903,12 @@ function renderCartDrawer() {
     `;
   }).join("");
 
-  const total = subtotal;
+  const discount = Math.round(subtotal * 0.10);
+  const total = Math.max(0, subtotal - discount);
+  const discountElem = document.getElementById("cart-discount");
 
   if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
+  if (discountElem) discountElem.textContent = `-₹${discount.toFixed(0)}`;
   if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
 }
@@ -1312,7 +1377,7 @@ function checkPinEntry() {
       renderApp();
       showToast("Admin access granted! 🔓 Edit mode activated.", "admin");
     } else {
-      showToast("Incorrect PIN! Default PIN is 1234", "error");
+      showToast("Incorrect Admin PIN! Access denied.", "error");
       inputs.forEach(i => i.value = "");
       inputs[0].focus();
     }
@@ -1375,7 +1440,8 @@ function openCheckoutTicketModal(existingOrder = null) {
       });
     });
 
-    const grandTotal = subtotal;
+    const discount = Math.round(subtotal * 0.10);
+    const grandTotal = Math.max(0, subtotal - discount);
     const orderId = "SB-" + Math.floor(1000 + Math.random() * 9000);
 
     orderToDisplay = {
@@ -1383,6 +1449,7 @@ function openCheckoutTicketModal(existingOrder = null) {
       customerName: customerName,
       items: orderItemsList,
       subtotal: subtotal,
+      discount: discount,
       tax: 0,
       total: grandTotal,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1392,6 +1459,11 @@ function openCheckoutTicketModal(existingOrder = null) {
 
     state.orders = state.orders || [];
     state.orders.unshift(orderToDisplay);
+    knownOrderIds.add(orderId);
+
+    // Play immediate audio chime & toast alert when order is placed
+    playOrderNotificationSound();
+    showToast(`🔔 NEW ORDER RECEIVED! #${orderId} by ${escapeHtml(customerName)} (₹${grandTotal})`, "admin");
 
     // Save active order ticket for customer's current session tab
     sessionStorage.setItem("ACTIVE_CUSTOMER_ORDER", JSON.stringify(orderToDisplay));
@@ -1406,12 +1478,22 @@ function openCheckoutTicketModal(existingOrder = null) {
   const liveOrder = (state.orders || []).find(o => o.id === orderToDisplay.id) || orderToDisplay;
 
   // Render ticket items & Customer Name
-  ticketBody.innerHTML = (liveOrder.items || []).map(i => `
+  let itemsHtml = (liveOrder.items || []).map(i => `
     <div class="ticket-item-row">
       <span>${i.qty}x ${escapeHtml(i.name)}</span>
       <span>₹${(i.price * i.qty).toFixed(0)}</span>
     </div>
   `).join("");
+
+  if (liveOrder.discount && liveOrder.discount > 0) {
+    itemsHtml += `
+      <div class="ticket-item-row" style="color: #10b981; font-weight: 700; border-top: 1px dashed #cbd5e1; padding-top: 0.35rem; margin-top: 0.35rem;">
+        <span>🎉 Special Discount (10% OFF)</span>
+        <span>-₹${parseFloat(liveOrder.discount).toFixed(0)}</span>
+      </div>
+    `;
+  }
+  ticketBody.innerHTML = itemsHtml;
 
   ticketTotal.textContent = `₹${parseFloat(liveOrder.total).toFixed(0)}`;
 
