@@ -1132,8 +1132,17 @@ input, select, textarea {
 
 .pin-hint {
   text-align: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0 !important;
+  color: var(--accent-gold);
+  margin-top: 0.5rem;
+}
+
+.pin-hint::after {
+  content: "🔒 Authorized Admin Access Only";
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  display: block;
 }
 
 /* Ticket/Receipt Modal */
