@@ -6,6 +6,12 @@ const DEFAULT_MENU_DATA = {
   hours: "Open Daily: 10:00 AM - 10:00 PM",
   adminPin: "1234",
   currency: "₹",
+  discountOffer: {
+    enabled: false,
+    type: "percent",
+    value: 10,
+    bannerText: "🎉 10% OFF ON ALL ORDERS"
+  },
   categories: [
     { id: "all", name: "All Items", icon: "✨" },
     { id: "chai-coffee", name: "Chai & Coffee", icon: "☕" },

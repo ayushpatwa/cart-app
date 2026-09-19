@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="styles.css?v=20260831_v27_ADMIN_OFFERS">
+  <link rel="stylesheet" href="styles.css?v=20260920_v28_OFFER_TOGGLE">
   
   <script>
     // Force clear outdated browser caches & ServiceWorkers
@@ -71,7 +71,7 @@
         
         <div class="cart-meta-tags">
           <span class="meta-tag pure-veg-badge" style="background: #1E5631; color: white; font-weight: 800; border: none;">🌱 100% PURE VEG</span>
-          <span id="hero-promo-tag" class="meta-tag" style="background: linear-gradient(135deg, #FFB300, #f59e0b); color: black; font-weight: 800; border: none; box-shadow: 0 0 12px rgba(255, 179, 0, 0.4);">🎉 10% OFF ON ALL ORDERS</span>
+          <span id="hero-promo-tag" class="meta-tag" style="display: none; background: linear-gradient(135deg, #FFB300, #f59e0b); color: black; font-weight: 800; border: none; box-shadow: 0 0 12px rgba(255, 179, 0, 0.4);">🎉 10% OFF ON ALL ORDERS</span>
           <span class="meta-tag">☕ Fresh Kullhad Chai</span>
           <span class="meta-tag">🥪 Grilled Sandwiches & Momos</span>
         </div>
@@ -118,7 +118,7 @@
         <div class="admin-action-btns">
           <button id="btn-admin-orders" class="btn-add-item" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">📦 Live Orders (<span id="admin-order-count">0</span>)</button>
           <button id="btn-admin-add-dish" class="btn-add-item">➕ Add New Dish</button>
-          <button id="btn-admin-offers" class="btn-manage-cats" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 700;">🏷️ Discount Offers</button>
+          <button id="btn-admin-offers" class="btn-manage-cats" style="background: #1e293b; color: white; border: 1px solid rgba(255,255,255,0.15); font-weight: 700;">🏷️ Offers: <span id="admin-offer-pill" style="padding: 0.15rem 0.5rem; border-radius: 99px; font-size: 0.725rem; font-weight: 800; background: #64748b; color: white; margin-left: 0.35rem;">OFF</span></button>
           <button id="btn-admin-firebase" class="btn-manage-cats" style="background: rgba(245,158,11,0.2); color:#fbbf24; border: 1px solid rgba(245,158,11,0.4);">🔥 Firebase DB</button>
           <button id="btn-admin-bulk" class="btn-manage-cats">📥 Bulk Import</button>
           <button id="btn-admin-cats" class="btn-manage-cats">📁 Categories</button>
@@ -163,7 +163,7 @@
           <span>Subtotal</span>
           <span id="cart-subtotal">₹0</span>
         </div>
-        <div class="cart-summary-line" style="color: #34d399; font-weight: 700;">
+        <div id="cart-discount-row" class="cart-summary-line" style="color: #34d399; font-weight: 700; display: none;">
           <span id="cart-discount-label">🎉 Special Discount (10% OFF)</span>
           <span id="cart-discount">-₹0</span>
         </div>
@@ -489,47 +489,86 @@
 
   <!-- ADMIN DISCOUNT OFFER MANAGER MODAL -->
   <div id="offer-modal" class="modal-overlay">
-    <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-box" style="max-width: 500px;">
       <div class="modal-header">
         <h3>🏷️ Admin Discount Offer Manager</h3>
         <button class="btn-close-drawer btn-close-modal">✕</button>
       </div>
       <div class="modal-body">
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-          Configure site-wide discounts and promotional offers that apply instantly to all customer order bags.
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+          Control site-wide promotional offers. Turn OFF to charge regular prices, or turn ON with custom percentage or flat discounts.
         </p>
         
         <form id="offer-form" onsubmit="return false;">
-          <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: rgba(16,185,129,0.1); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(16,185,129,0.3); margin-bottom: 1rem;">
-            <label for="modal-offer-enable" style="color: white; font-weight: 700; margin: 0; cursor: pointer;">
-              🚀 Enable Site-Wide Offer
+          <!-- Master Offer Toggle Card -->
+          <div id="offer-toggle-card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.15); background: rgba(15, 23, 42, 0.6); margin-bottom: 1.25rem; transition: all 0.3s ease;">
+            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+              <span id="offer-status-title" style="color: white; font-weight: 800; font-size: 0.95rem;">Offer Status: <span id="offer-status-text" style="color: #94a3b8;">DISABLED (OFF) ⚪</span></span>
+              <span id="offer-status-desc" style="color: var(--text-muted); font-size: 0.775rem;">Standard menu prices active. No discounts or promo banners.</span>
+            </div>
+            <label class="switch-toggle" style="position: relative; display: inline-block; width: 52px; height: 28px; margin: 0; cursor: pointer; flex-shrink: 0;">
+              <input type="checkbox" id="modal-offer-enable" onchange="handleOfferToggleChange()" style="opacity: 0; width: 0; height: 0;" />
+              <span class="switch-slider" style="position: absolute; cursor: pointer; inset: 0; background-color: #475569; transition: .3s; border-radius: 28px;"></span>
             </label>
-            <input type="checkbox" id="modal-offer-enable" style="width: 20px; height: 20px; cursor: pointer; accent-color: #10b981;" />
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="modal-offer-type">Discount Type *</label>
-              <select id="modal-offer-type">
-                <option value="percent">Percentage Discount (%)</option>
-                <option value="flat">Flat Amount Discount (₹)</option>
-              </select>
+          <!-- Customizable Offer Settings -->
+          <div id="offer-settings-section" style="transition: opacity 0.3s ease;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal-offer-type">Discount Type *</label>
+                <select id="modal-offer-type" onchange="handleOfferConfigChange()">
+                  <option value="percent">Percentage Discount (%)</option>
+                  <option value="flat">Flat Amount Discount (₹)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="modal-offer-value">Discount Value *</label>
+                <input type="number" id="modal-offer-value" placeholder="e.g. 10" min="1" step="1" oninput="handleOfferConfigChange()" required />
+              </div>
+            </div>
+
+            <!-- Quick Preset Offer Buttons -->
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.35rem; display: block;">⚡ Quick 1-Click Presets:</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                <button type="button" class="btn-preset-offer" onclick="applyOfferPreset('percent', 10, '🎉 10% OFF ON ALL ORDERS')">10% OFF</button>
+                <button type="button" class="btn-preset-offer" onclick="applyOfferPreset('percent', 15, '🎉 15% SPECIAL DISCOUNT')">15% OFF</button>
+                <button type="button" class="btn-preset-offer" onclick="applyOfferPreset('percent', 20, '🔥 20% MEGA SAVER OFFER')">20% OFF</button>
+                <button type="button" class="btn-preset-offer" onclick="applyOfferPreset('flat', 30, '🎉 FLAT ₹30 OFF ON ALL ORDERS')">Flat ₹30 OFF</button>
+                <button type="button" class="btn-preset-offer" onclick="applyOfferPreset('flat', 50, '🔥 FLAT ₹50 OFF ON ALL ORDERS')">Flat ₹50 OFF</button>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="modal-offer-value">Discount Value *</label>
-              <input type="number" id="modal-offer-value" placeholder="e.g. 10 for 10% OFF" min="0" step="1" required />
+              <label for="modal-offer-banner">Custom Hero Promo Banner Text</label>
+              <input type="text" id="modal-offer-banner" placeholder="e.g. 🎉 10% OFF ON ALL ORDERS" oninput="updateOfferLivePreview()" required />
+            </div>
+
+            <!-- Live Preview of Customer Experience -->
+            <div class="form-group" style="background: var(--bg-surface); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); margin-top: 1rem;">
+              <span style="font-size: 0.725rem; font-weight: 700; color: var(--accent-gold); display: block; margin-bottom: 0.35rem;">👁️ Customer Live Preview:</span>
+              <div id="offer-preview-banner" style="display: inline-block; background: linear-gradient(135deg, #FFB300, #f59e0b); color: black; font-weight: 800; font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 99px; box-shadow: 0 0 10px rgba(255,179,0,0.3); margin-bottom: 0.5rem;">
+                🎉 10% OFF ON ALL ORDERS
+              </div>
+              <div style="font-size: 0.8rem; color: #cbd5e1; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.35rem;">
+                <span id="offer-preview-label">Sample Bag: Subtotal ₹200 ➔ <strong style="color: #34d399;">Special Discount: -₹20</strong></span>
+                <span id="offer-preview-total" style="font-weight: 800; color: white;">Total: ₹180</span>
+              </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="modal-offer-banner">Hero Promo Banner Text</label>
-            <input type="text" id="modal-offer-banner" placeholder="e.g. 🎉 10% OFF ON ALL ORDERS" required />
-          </div>
-
-          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem;">
-            <button type="button" class="btn-cancel btn-close-modal">Cancel</button>
-            <button type="button" onclick="saveAdminOfferFromModal()" class="btn-save" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">💾 Apply Live Offer</button>
+          <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <button type="button" onclick="turnOffOfferDirectly()" class="btn-cancel" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4);">
+              🚫 Turn OFF Offer
+            </button>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" class="btn-cancel btn-close-modal">Cancel</button>
+              <button type="button" onclick="saveAdminOfferFromModal()" class="btn-save" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                💾 Save & Apply
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -540,7 +579,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- SCRIPT FILES -->
-  <script src="data.js?v=20260831_v27_ADMIN_OFFERS"></script>
-  <script src="app.js?v=20260831_v27_ADMIN_OFFERS"></script>
+  <script src="data.js?v=20260920_v28_OFFER_TOGGLE"></script>
+  <script src="app.js?v=20260920_v28_OFFER_TOGGLE"></script>
 </body>
 </html>

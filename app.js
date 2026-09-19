@@ -161,7 +161,7 @@ function getAppStateData() {
     categories: state.categories,
     items: state.items,
     orders: state.orders || [],
-    discountOffer: state.discountOffer || { enabled: true, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" },
+    discountOffer: state.discountOffer || { enabled: false, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" },
     updatedAt: new Date().toISOString()
   };
 }
@@ -177,7 +177,7 @@ let state = {
   items: [],
   orders: [], // Live Customer Orders Array { id, items, total, status, time }
   discountOffer: {
-    enabled: true,
+    enabled: false,
     type: "percent",
     value: 10,
     bannerText: "🎉 10% OFF ON ALL ORDERS"
@@ -219,7 +219,7 @@ function calculateCartDiscount(subtotal) {
 }
 
 // LocalStorage Keys
-const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V4_IMAGE_SYNC";
+const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V6_OFFER_OFF";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready
@@ -486,6 +486,28 @@ function renderAdminHeaderState() {
     adminBtn.innerHTML = `⚙️ Admin Mode (Exit)`;
     if (adminToolbar) adminToolbar.style.display = "flex";
     if (adminPill) adminPill.style.display = "flex";
+
+    const offerPill = document.getElementById("admin-offer-pill");
+    const offerBtn = document.getElementById("btn-admin-offers");
+    const isOfferOn = !!(state.discountOffer && state.discountOffer.enabled);
+    if (offerPill) {
+      if (isOfferOn) {
+        const valStr = state.discountOffer.type === "percent" ? `${state.discountOffer.value}% OFF` : `₹${state.discountOffer.value} OFF`;
+        offerPill.textContent = `🟢 ON (${valStr})`;
+        offerPill.style.background = "#10b981";
+        if (offerBtn) {
+          offerBtn.style.background = "rgba(16, 185, 129, 0.2)";
+          offerBtn.style.borderColor = "rgba(16, 185, 129, 0.5)";
+        }
+      } else {
+        offerPill.textContent = "⚪ OFF";
+        offerPill.style.background = "#64748b";
+        if (offerBtn) {
+          offerBtn.style.background = "#1e293b";
+          offerBtn.style.borderColor = "rgba(255, 255, 255, 0.15)";
+        }
+      }
+    }
   } else {
     adminBtn.classList.remove("active");
     if (activeCount > 0) {
@@ -954,12 +976,20 @@ function renderCartDrawer() {
 
   const calc = calculateCartDiscount(subtotal);
   const total = Math.max(0, subtotal - calc.discount);
+  const discountRow = document.getElementById("cart-discount-row");
   const discountElem = document.getElementById("cart-discount");
   const discountLabelElem = document.getElementById("cart-discount-label");
 
   if (subtotalElem) subtotalElem.textContent = `₹${subtotal.toFixed(0)}`;
-  if (discountLabelElem) discountLabelElem.textContent = calc.label || "Special Discount";
-  if (discountElem) discountElem.textContent = `-₹${calc.discount.toFixed(0)}`;
+  if (discountRow) {
+    if (calc.discount > 0) {
+      discountRow.style.display = "flex";
+      if (discountLabelElem) discountLabelElem.textContent = calc.label || "Special Discount";
+      if (discountElem) discountElem.textContent = `-₹${calc.discount.toFixed(0)}`;
+    } else {
+      discountRow.style.display = "none";
+    }
+  }
   if (totalElem) totalElem.textContent = `₹${total.toFixed(0)}`;
   if (checkoutBtn) checkoutBtn.disabled = false;
 }
@@ -1403,7 +1433,7 @@ function setupEventListeners() {
 function openAdminOfferModal() {
   const modal = document.getElementById("offer-modal");
   if (!modal) return;
-  const offer = state.discountOffer || { enabled: true, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" };
+  const offer = state.discountOffer || { enabled: false, type: "percent", value: 10, bannerText: "🎉 10% OFF ON ALL ORDERS" };
 
   const enableChk = document.getElementById("modal-offer-enable");
   const typeSel = document.getElementById("modal-offer-type");
@@ -1412,10 +1442,146 @@ function openAdminOfferModal() {
 
   if (enableChk) enableChk.checked = !!offer.enabled;
   if (typeSel) typeSel.value = offer.type || "percent";
-  if (valInp) valInp.value = offer.value !== undefined ? offer.value : 10;
+  if (valInp) valInp.value = (offer.value !== undefined && offer.value !== null) ? offer.value : 10;
   if (bannerInp) bannerInp.value = offer.bannerText || "🎉 10% OFF ON ALL ORDERS";
 
+  updateOfferToggleUI();
+  updateOfferLivePreview();
+
   modal.classList.add("open");
+}
+
+function handleOfferToggleChange() {
+  updateOfferToggleUI();
+}
+
+function updateOfferToggleUI() {
+  const enableChk = document.getElementById("modal-offer-enable");
+  const toggleCard = document.getElementById("offer-toggle-card");
+  const statusText = document.getElementById("offer-status-text");
+  const statusDesc = document.getElementById("offer-status-desc");
+  const settingsSec = document.getElementById("offer-settings-section");
+
+  const isEnabled = enableChk ? enableChk.checked : false;
+
+  if (statusText) {
+    if (isEnabled) {
+      statusText.innerHTML = "ACTIVE & LIVE 🟢";
+      statusText.style.color = "#34d399";
+    } else {
+      statusText.innerHTML = "DISABLED (OFF) ⚪";
+      statusText.style.color = "#94a3b8";
+    }
+  }
+
+  if (statusDesc) {
+    if (isEnabled) {
+      statusDesc.textContent = "Customers currently receive this discount across all orders.";
+      statusDesc.style.color = "#a7f3d0";
+    } else {
+      statusDesc.textContent = "Standard menu prices active. No discounts or promo banners shown.";
+      statusDesc.style.color = "var(--text-muted)";
+    }
+  }
+
+  if (toggleCard) {
+    if (isEnabled) {
+      toggleCard.style.background = "rgba(16, 185, 129, 0.15)";
+      toggleCard.style.borderColor = "rgba(16, 185, 129, 0.5)";
+      toggleCard.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.2)";
+    } else {
+      toggleCard.style.background = "rgba(15, 23, 42, 0.6)";
+      toggleCard.style.borderColor = "rgba(255, 255, 255, 0.15)";
+      toggleCard.style.boxShadow = "none";
+    }
+  }
+
+  if (settingsSec) {
+    settingsSec.style.opacity = isEnabled ? "1" : "0.75";
+  }
+}
+
+function handleOfferConfigChange() {
+  const typeSel = document.getElementById("modal-offer-type");
+  const valInp = document.getElementById("modal-offer-value");
+  const bannerInp = document.getElementById("modal-offer-banner");
+
+  const type = typeSel ? typeSel.value : "percent";
+  const val = valInp ? parseFloat(valInp.value) || 0 : 0;
+
+  if (bannerInp) {
+    const curVal = bannerInp.value.trim();
+    if (!curVal || curVal.startsWith("🎉") || curVal.startsWith("🔥")) {
+      bannerInp.value = (type === "percent") 
+        ? `🎉 ${val}% OFF ON ALL ORDERS` 
+        : `🎉 FLAT ₹${val} OFF ON ALL ORDERS`;
+    }
+  }
+
+  updateOfferLivePreview();
+}
+
+function applyOfferPreset(type, val, banner) {
+  const enableChk = document.getElementById("modal-offer-enable");
+  const typeSel = document.getElementById("modal-offer-type");
+  const valInp = document.getElementById("modal-offer-value");
+  const bannerInp = document.getElementById("modal-offer-banner");
+
+  if (enableChk) enableChk.checked = true;
+  if (typeSel) typeSel.value = type;
+  if (valInp) valInp.value = val;
+  if (bannerInp) bannerInp.value = banner;
+
+  updateOfferToggleUI();
+  updateOfferLivePreview();
+  showToast(`Applied preset: ${banner}`, "admin");
+}
+
+function updateOfferLivePreview() {
+  const typeSel = document.getElementById("modal-offer-type");
+  const valInp = document.getElementById("modal-offer-value");
+  const bannerInp = document.getElementById("modal-offer-banner");
+  const previewBanner = document.getElementById("offer-preview-banner");
+  const previewLabel = document.getElementById("offer-preview-label");
+  const previewTotal = document.getElementById("offer-preview-total");
+
+  const type = typeSel ? typeSel.value : "percent";
+  const val = valInp ? parseFloat(valInp.value) || 0 : 0;
+  const banner = bannerInp ? bannerInp.value.trim() : "";
+
+  if (previewBanner) {
+    previewBanner.textContent = banner || (type === "percent" ? `🎉 ${val}% OFF ON ALL ORDERS` : `🎉 FLAT ₹${val} OFF ON ALL ORDERS`);
+  }
+
+  const sampleSubtotal = 200;
+  let sampleDiscount = 0;
+  if (type === "percent") {
+    sampleDiscount = Math.round(sampleSubtotal * (val / 100));
+  } else {
+    sampleDiscount = Math.min(sampleSubtotal, val);
+  }
+  const sampleFinal = Math.max(0, sampleSubtotal - sampleDiscount);
+
+  if (previewLabel) {
+    previewLabel.innerHTML = `Sample Bag: Subtotal ₹${sampleSubtotal} ➔ <strong style="color: #34d399;">Special Discount: -₹${sampleDiscount}</strong>`;
+  }
+  if (previewTotal) {
+    previewTotal.textContent = `Total: ₹${sampleFinal}`;
+  }
+}
+
+function turnOffOfferDirectly() {
+  state.discountOffer = {
+    enabled: false,
+    type: state.discountOffer?.type || "percent",
+    value: state.discountOffer?.value || 10,
+    bannerText: state.discountOffer?.bannerText || "🎉 10% OFF ON ALL ORDERS"
+  };
+
+  saveState();
+  renderApp();
+  closeModal("offer-modal");
+  showToast("Discount offer turned OFF! Standard menu prices active. ⚪", "admin");
 }
 
 function saveAdminOfferFromModal() {
@@ -1424,10 +1590,10 @@ function saveAdminOfferFromModal() {
   const valInp = document.getElementById("modal-offer-value");
   const bannerInp = document.getElementById("modal-offer-banner");
 
-  const enabled = enableChk ? enableChk.checked : true;
+  const enabled = enableChk ? enableChk.checked : false;
   const type = typeSel ? typeSel.value : "percent";
   const value = valInp ? (parseFloat(valInp.value) || 0) : 10;
-  let defaultBanner = (type === "percent") ? `🎉 ${value}% OFF ON ALL ORDERS` : `🎉 ₹${value} FLAT DISCOUNT ON ALL ORDERS`;
+  let defaultBanner = (type === "percent") ? `🎉 ${value}% OFF ON ALL ORDERS` : `🎉 FLAT ₹${value} OFF ON ALL ORDERS`;
   const bannerText = bannerInp ? (bannerInp.value.trim() || defaultBanner) : defaultBanner;
 
   state.discountOffer = {
@@ -1440,8 +1606,22 @@ function saveAdminOfferFromModal() {
   saveState();
   renderApp();
   closeModal("offer-modal");
-  showToast(`Live discount offer updated successfully! 🏷️`, "admin");
+
+  if (enabled) {
+    showToast(`Live discount offer activated: "${bannerText}"! 🏷️`, "admin");
+  } else {
+    showToast(`Offer saved as DISABLED. Standard prices active. ⚪`, "admin");
+  }
 }
+
+// Global window assignments for onclick handlers in HTML
+window.openAdminOfferModal = openAdminOfferModal;
+window.handleOfferToggleChange = handleOfferToggleChange;
+window.handleOfferConfigChange = handleOfferConfigChange;
+window.applyOfferPreset = applyOfferPreset;
+window.updateOfferLivePreview = updateOfferLivePreview;
+window.turnOffOfferDirectly = turnOffOfferDirectly;
+window.saveAdminOfferFromModal = saveAdminOfferFromModal;
 
 /* ==========================================================================
    PIN Authentication Modal Logic
