@@ -15,6 +15,7 @@ const DEFAULT_MENU_DATA = {
   categories: [
     { id: "all", name: "All Items", icon: "✨" },
     { id: "chai-coffee", name: "Chai & Coffee", icon: "☕" },
+    { id: "chinese", name: "Chilli & Chinese", icon: "🥢" },
     { id: "snacks", name: "Snacks & Chaat", icon: "🍿" },
     { id: "puffs", name: "Puff Patties", icon: "🥐" },
     { id: "momos", name: "Momos Special", icon: "🥟" },
@@ -22,6 +23,7 @@ const DEFAULT_MENU_DATA = {
     { id: "maggi", name: "Maggi Special", icon: "🍜" },
     { id: "sandwiches", name: "Grilled Sandwiches", icon: "🥪" },
     { id: "pasta-fries", name: "Pasta & Fries", icon: "🍟" },
+    { id: "pizza", name: "Pizza Special", icon: "🍕" },
     { id: "beverages", name: "Shakes & Coolers", icon: "🧋" }
   ],
   items: [
@@ -796,6 +798,111 @@ const DEFAULT_MENU_DATA = {
       tags: ["Extra Cool ❄️"],
       dietary: ["vegetarian", "vegan"],
       calories: "110 kcal"
+    },
+    // --- INDO-CHINESE, CHILLI SPECIALS, PIZZA & PASTA ---
+    {
+      id: "pdf-58",
+      name: "Chilly Paneer Gravy (8 Pcs)",
+      category: "chinese",
+      price: 100,
+      description: "Succulent fresh cottage cheese cubes simmered in spicy Indo-Chinese dark soya & chilli gravy with bell peppers.",
+      image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["8 Pcs", "Spicy 🌶️", "Bestseller 🔥"],
+      dietary: ["vegetarian"],
+      calories: "280 kcal"
+    },
+    {
+      id: "pdf-59",
+      name: "Chilly Paneer Dry (8 Pcs)",
+      category: "chinese",
+      price: 120,
+      description: "Wok-tossed crispy cottage cheese cubes coated in spicy garlic-chilli sauce with capsicum and spring onions.",
+      image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["8 Pcs", "Crispy", "Chef's Special"],
+      dietary: ["vegetarian"],
+      calories: "260 kcal"
+    },
+    {
+      id: "pdf-60",
+      name: "Chilly Potato",
+      category: "chinese",
+      price: 90,
+      description: "Crispy fried golden potato fingers tossed in savory, spicy Indo-Chinese chilli garlic sauce and sesame seeds.",
+      image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["Crispy 🍟", "Spicy 🌶️"],
+      dietary: ["vegetarian", "vegan"],
+      calories: "220 kcal"
+    },
+    {
+      id: "pdf-61",
+      name: "Honey Chilly Potato",
+      category: "chinese",
+      price: 100,
+      description: "Crunchy potato fingers tossed in a luscious honey glaze with red chillies, toasted sesame seeds, and scallions.",
+      image: "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["Sweet & Spicy 🍯", "Popular ✨"],
+      dietary: ["vegetarian"],
+      calories: "250 kcal"
+    },
+    {
+      id: "pdf-62",
+      name: "Mix Chilly Potato",
+      category: "chinese",
+      price: 120,
+      description: "Special loaded chef's creation combining crispy fries, paneer chunks, crunchy bell peppers, and fiery chilli sauce.",
+      image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: false,
+      tags: ["Loaded 🌶️", "Special Mix"],
+      dietary: ["vegetarian"],
+      calories: "290 kcal"
+    },
+    {
+      id: "pdf-63",
+      name: "Chilly Gravy Momos (8 Pcs)",
+      category: "momos",
+      price: 90,
+      description: "Steamed artisanal vegetable dumplings tossed in sizzling hot schezwan chilli gravy and garnished with spring onions.",
+      image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["8 Pcs", "Hot & Spicy 🥟"],
+      dietary: ["vegetarian"],
+      calories: "210 kcal"
+    },
+    {
+      id: "pdf-64",
+      name: "Sweet Corn Pizza",
+      category: "pizza",
+      price: 100,
+      description: "Hand-stretched crispy crust topped with rich tomato herb sauce, juicy sweet corn kernels, and melted mozzarella cheese.",
+      image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["Cheesy 🧀", "Sweet Corn 🌽"],
+      dietary: ["vegetarian"],
+      calories: "320 kcal"
+    },
+    {
+      id: "pdf-65",
+      name: "Red Sauce Pasta",
+      category: "pasta-fries",
+      price: 120,
+      description: "Al dente Italian penne pasta tossed in fiery garlic, herb-infused tomato arrabiata sauce with melted cheese garnish.",
+      image: "https://images.unsplash.com/photo-1598866594230-a7c12756260f?auto=format&fit=crop&w=800&q=80",
+      inStock: true,
+      popular: true,
+      tags: ["Italian 🇮🇹", "Arrabiata 🍅"],
+      dietary: ["vegetarian"],
+      calories: "270 kcal"
     }
   ]
 };

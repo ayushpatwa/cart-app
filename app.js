@@ -93,9 +93,25 @@ function initFirebaseEngine() {
         if (cloudData) {
           if (Array.isArray(cloudData.items) && cloudData.items.length > 0) {
             state.items = cloudData.items;
+            const cloudIds = new Set(cloudData.items.map(i => String(i.id).trim()));
+            DEFAULT_MENU_DATA.items.forEach(defItem => {
+              if (!cloudIds.has(String(defItem.id).trim())) {
+                state.items.push(defItem);
+              }
+            });
+          } else {
+            state.items = DEFAULT_MENU_DATA.items;
           }
           if (Array.isArray(cloudData.categories) && cloudData.categories.length > 0) {
             state.categories = cloudData.categories;
+            const cloudCatIds = new Set(cloudData.categories.map(c => c.id));
+            DEFAULT_MENU_DATA.categories.forEach(defCat => {
+              if (!cloudCatIds.has(defCat.id)) {
+                state.categories.push(defCat);
+              }
+            });
+          } else {
+            state.categories = DEFAULT_MENU_DATA.categories;
           }
           state.cartName = cloudData.cartName || state.cartName;
           state.tagline = cloudData.tagline || state.tagline;
@@ -219,7 +235,7 @@ function calculateCartDiscount(subtotal) {
 }
 
 // LocalStorage Keys
-const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V6_OFFER_OFF";
+const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V7_NEW_DISHES";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready
@@ -254,6 +270,10 @@ function loadLocalData() {
       state.tagline = parsed.tagline || DEFAULT_MENU_DATA.tagline;
       state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
       state.categories = (parsed.categories && parsed.categories.length > 0) ? parsed.categories : DEFAULT_MENU_DATA.categories;
+      const catIds = new Set(state.categories.map(c => c.id));
+      DEFAULT_MENU_DATA.categories.forEach(defCat => {
+        if (!catIds.has(defCat.id)) state.categories.push(defCat);
+      });
       
       if (Array.isArray(parsed.items) && parsed.items.length > 0) {
         // Smart Merge: Merge saved custom edits while keeping fresh image URLs from data.js
@@ -267,6 +287,12 @@ function loadLocalData() {
             };
           }
           return savedItem;
+        });
+        const existingIds = new Set(state.items.map(i => String(i.id).trim()));
+        DEFAULT_MENU_DATA.items.forEach(defItem => {
+          if (!existingIds.has(String(defItem.id).trim())) {
+            state.items.push(defItem);
+          }
         });
       } else {
         state.items = DEFAULT_MENU_DATA.items;
