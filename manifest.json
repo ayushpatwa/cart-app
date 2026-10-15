@@ -1,11 +1,11 @@
 {
-  "name": "Lala Hoti Lal Halwai & Cafe",
-  "short_name": "Lala Hoti Lal",
+  "name": "Lala Hotilal & Sons Cafe",
+  "short_name": "Hotilal & Sons",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f1219",
   "theme_color": "#8B1E1E",
-  "description": "Lala Hoti Lal Halwai & Cafe - Pure Veg Street Eats, Chai, Momos & Coolers",
+  "description": "Lala Hotilal & Sons Cafe - Pure Veg Street Eats, Chai, Momos & Coolers",
   "icons": [
     {
       "src": "./assets/images/logo.jpg",

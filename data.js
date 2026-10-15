@@ -1,6 +1,6 @@
-// Menu dataset redesigned for Lala Hoti Lal Halwai & Cafe
+// Menu dataset redesigned for Lala Hotilal & Sons Cafe
 const DEFAULT_MENU_DATA = {
-  cartName: "Lala Hoti Lal Halwai & Cafe",
+  cartName: "Lala Hotilal & Sons Cafe",
   tagline: "Pure Veg Artisanal Street Eats, Snacks & Cafe Favorites 🌱",
   location: "Pure Veg Station • Cart #04",
   hours: "Open Daily: 10:00 AM - 10:00 PM",

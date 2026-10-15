@@ -113,7 +113,7 @@ function initFirebaseEngine() {
           } else {
             state.categories = DEFAULT_MENU_DATA.categories;
           }
-          state.cartName = cloudData.cartName || state.cartName;
+          state.cartName = (cloudData.cartName && !cloudData.cartName.includes("Halwai")) ? cloudData.cartName : DEFAULT_MENU_DATA.cartName;
           state.tagline = cloudData.tagline || state.tagline;
           state.adminPin = cloudData.adminPin || state.adminPin;
           state.discountOffer = cloudData.discountOffer || state.discountOffer;
@@ -184,7 +184,7 @@ function getAppStateData() {
 
 // Global State
 let state = {
-  cartName: "Lala Hoti Lal Halwai & Cafe",
+  cartName: "Lala Hotilal & Sons Cafe",
   tagline: "Pure Veg Artisanal Street Eats, Snacks & Cafe Favorites 🌱",
   location: "Pure Veg Station • Cart #04",
   hours: "Open Daily: 10:00 AM - 10:00 PM",
@@ -235,7 +235,7 @@ function calculateCartDiscount(subtotal) {
 }
 
 // LocalStorage Keys
-const STORAGE_KEY = "LALA_HOTI_LAL_MENU_V7_NEW_DISHES";
+const STORAGE_KEY = "LALA_HOTILAL_SONS_CAFE_V8";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready
@@ -266,7 +266,7 @@ function loadLocalData() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      state.cartName = parsed.cartName || DEFAULT_MENU_DATA.cartName;
+      state.cartName = (parsed.cartName && !parsed.cartName.includes("Halwai")) ? parsed.cartName : DEFAULT_MENU_DATA.cartName;
       state.tagline = parsed.tagline || DEFAULT_MENU_DATA.tagline;
       state.adminPin = parsed.adminPin || DEFAULT_MENU_DATA.adminPin;
       state.categories = (parsed.categories && parsed.categories.length > 0) ? parsed.categories : DEFAULT_MENU_DATA.categories;
