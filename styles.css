@@ -205,6 +205,7 @@ input, select, textarea {
 }
 
 .banner-wrapper {
+  position: relative;
   width: 100%;
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -212,6 +213,45 @@ input, select, textarea {
   box-shadow: var(--shadow-md);
   margin-bottom: 1.25rem;
   background: var(--bg-card);
+}
+
+.banner-phone-badge {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.25rem;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid var(--accent-gold);
+  padding: 0.5rem 1.15rem;
+  border-radius: 99px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 2;
+  transition: var(--transition);
+}
+
+.banner-phone-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
+  border-color: #f59e0b;
+}
+
+.banner-phone-badge a {
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.banner-phone-badge a span {
+  color: var(--accent-gold);
 }
 
 .hero-banner-img {
@@ -228,6 +268,16 @@ input, select, textarea {
     aspect-ratio: 16 / 9;
     object-fit: contain;
     background: #181d28;
+  }
+
+  .banner-phone-badge {
+    bottom: 0.65rem;
+    right: 0.65rem;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .banner-phone-badge a {
+    font-size: 0.8rem;
   }
 }
 

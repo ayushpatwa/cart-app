@@ -188,6 +188,7 @@ let state = {
   tagline: "Pure Veg Artisanal Street Eats, Snacks & Cafe Favorites 🌱",
   location: "Pure Veg Station • Cart #04",
   hours: "Open Daily: 10:00 AM - 10:00 PM",
+  phone: "7835912403",
   adminPin: "1234",
   categories: [],
   items: [],
@@ -235,7 +236,7 @@ function calculateCartDiscount(subtotal) {
 }
 
 // LocalStorage Keys
-const STORAGE_KEY = "LALA_HOTILAL_SONS_CAFE_V8";
+const STORAGE_KEY = "LALA_HOTILAL_SONS_CAFE_V9_PHONE";
 const CART_STORAGE_KEY = "FOOD_CART_CART_ITEMS";
 
 // Initialize App on DOM Ready
